@@ -1,0 +1,27 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "btree_gin";
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    version VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    checksum VARCHAR(64) NOT NULL,
+    execution_time INTERVAL
+);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'app_user') THEN
+        CREATE ROLE app_user WITH LOGIN PASSWORD '${APP_DB_PASSWORD}';
+    END IF;
+END
+$$;
+
+GRANT CONNECT ON DATABASE ${DB_NAME} TO app_user;
+GRANT USAGE ON SCHEMA public TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO app_user;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO app_user;
