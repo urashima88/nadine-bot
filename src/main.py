@@ -1,7 +1,5 @@
-import os
 
 import telebot
-from telebot import types
 
 from src.handlers import setup_handlers
 from src.logging.logger import setup_logger
@@ -35,7 +33,7 @@ def main():
 
     setup_handlers(bot, db, cfg, content_cfg, logger)
     
-    print("Starting bot...")
+    logger.info("Starting bot...")
     bot.polling(none_stop=True, interval=2)
 
 if __name__ == '__main__':

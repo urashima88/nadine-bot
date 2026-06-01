@@ -4,6 +4,8 @@ from pathlib import Path
 from datetime import datetime
 import argparse
 import sys
+from typing import Dict
+from logging import Logger
 
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -15,15 +17,8 @@ load_dotenv()
 
 
 class MigrationManager:
-    def __init__(self, logger, db_config: dict = None):
-        self.db_config = db_config or {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'port': os.getenv('DB_PORT', '5432'),
-            'database': os.getenv('DB_NAME'),
-            'user': os.getenv('DB_USER'),
-            'password': os.getenv('DB_PASSWORD'),
-            'application_name': 'migration-runner'
-        }
+    def __init__(self, db_config: Dict[str, str], logger: Logger):
+        self.db_config = db_config
         self.logger = logger
         self.migrations_dir = Path(os.getenv('MIGRATIONS_DIR', 'migrations'))
         self.migrations_dir.mkdir(exist_ok=True)
@@ -296,8 +291,16 @@ def main():
         bool(int(os.getenv("USE_FILE_HANDLER", 1))),
         os.getenv("LOGS_DIR", "logs")
     )
+    
+    conn_args = {
+        "host": os.getenv('DB_HOST', 'localhost'),
+        "port": os.getenv('DB_PORT', '5432'),
+        "database": os.getenv('DB_NAME'),
+        "user": os.getenv('DB_USER'),
+        "password": os.getenv('DB_PASSWORD')
+    }
 
-    manager = MigrationManager(logger)
+    manager = MigrationManager(conn_args, logger)
 
     match args.command:
         case "migrate":

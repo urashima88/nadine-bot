@@ -1,5 +1,5 @@
 .PHONY: help start-app up down start stop restart logs logs-app logs-db clean psql migrate migrate-create \
-        migrate-rollback migrate-status seed backup restore monitor health stats \
+        migrate-rollback migrate-status seed seed-local backup restore monitor health stats \
         test benchmark security-scan deploy scale
 
 GREEN := \033[0;32m
@@ -21,9 +21,10 @@ help:
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
 
-start-app: ## start app
+start-app: ## start app locally
 	DB_HOST=localhost python -m src.main
-
+	@echo -e "$(GREEN)$(OK) App started$(NC)"
+	
 up: ## start all services
 	@docker compose up -d
 	@echo -e "$(GREEN)$(OK) Services started$(NC)"
@@ -78,6 +79,10 @@ migrate-status: ## check migration status
 
 seed: ## load test data
 	@docker compose run --rm bot python -m app.database.seed
+	@echo -e "$(GREEN)$(OK) Test data loaded$(NC)"
+
+seed-local: ## load test data locally
+	DB_HOST=localhost python -m src.database.seed
 	@echo -e "$(GREEN)$(OK) Test data loaded$(NC)"
 
 backup: ## create db backup

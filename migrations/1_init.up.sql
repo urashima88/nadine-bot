@@ -40,85 +40,16 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS countries (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    code VARCHAR(3) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS regions (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    country_id UUID NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    code VARCHAR(10),
-
-    UNIQUE (country_id, name),
-
-    FOREIGN KEY (country_id) REFERENCES countries (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS districts (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    region_id UUID NOT NULL,
-    name VARCHAR(100) NOT NULL,
-
-    UNIQUE (region_id, name),
-
-    FOREIGN KEY (region_id) REFERENCES regions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS cities (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    district_id UUID,
-    region_id UUID NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    type VARCHAR(20),
-    postal_code VARCHAR(20),
-
-    UNIQUE (region_id, district_id, name),
-
-    FOREIGN KEY (district_id) REFERENCES districts (id) ON DELETE CASCADE,
-    FOREIGN KEY (region_id) REFERENCES regions (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS streets (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    city_id UUID NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    type VARCHAR(50),
-
-    UNIQUE (city_id, name),
-
-    FOREIGN KEY (city_id) REFERENCES cities (id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS delivery_points (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL,
     company VARCHAR(100) NOT NULL,
-    country_id UUID NOT NULL,
-    region_id UUID NOT NULL,
-    district_id UUID,
-    city_id UUID NOT NULL,
-    street_id UUID,
+    address TEXT NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    FOREIGN KEY (country_id) REFERENCES countries (id) ON DELETE CASCADE,
-    FOREIGN KEY (region_id) REFERENCES regions (id) ON DELETE CASCADE,
-    FOREIGN KEY (district_id) REFERENCES districts (id) ON DELETE CASCADE,
-    FOREIGN KEY (city_id) REFERENCES cities (id) ON DELETE CASCADE,
-    FOREIGN KEY (street_id) REFERENCES streets (id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS user_delivery_points (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL,
-    delivery_point_id UUID NOT NULL,
-
-    UNIQUE (user_id, delivery_point_id),
-
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (delivery_point_id) REFERENCES delivery_points (id) ON DELETE CASCADE 
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS cart (
