@@ -19,8 +19,6 @@ class Config:
 
     migrations_dir: str
 
-    product_images_path: str
-
     log_level: str
     use_stream_handler: bool
     use_file_handler: bool
@@ -40,7 +38,6 @@ def load_config() -> Config:
         pg_admin_password = os.getenv("PG_ADMIN_PASSWORD"),
         pg_admin_port = os.getenv("PG_ADMIN_PORT"),
         migrations_dir = os.getenv("MIGRATIONS_DIR", "migrations"),
-        product_images_path = os.getenv("PRODUCT_IMAGES_PATH", "images/products"),
         log_level = os.getenv("LOG_LEVEL", "INFO"),
         use_stream_handler = bool(int(os.getenv("USE_STREAM_HANDLER", 1))),
         use_file_handler = bool(int(os.getenv("USE_FILE_HANDLER", 1))),

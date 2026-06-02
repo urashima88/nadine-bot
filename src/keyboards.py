@@ -2,7 +2,7 @@ from telebot import types
 
 from src.config.content_config import ContentConfig
 
-def main_menu(content_cfg: ContentConfig):
+def main_menu_keyboard(content_cfg: ContentConfig):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton(content_cfg.catalog_message),
@@ -13,7 +13,7 @@ def main_menu(content_cfg: ContentConfig):
     markup.add(*buttons)
     return markup
 
-def catalog_menu(content_cfg: ContentConfig):
+def catalog_menu_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
         types.InlineKeyboardButton(content_cfg.catalog_menu_all_products_text, callback_data='catalog_all'),
@@ -21,6 +21,9 @@ def catalog_menu(content_cfg: ContentConfig):
         types.InlineKeyboardButton(content_cfg.catalog_menu_earrings_category, callback_data='catalog_earrings'),
         types.InlineKeyboardButton(content_cfg.catalog_menu_necklaces_category, callback_data='catalog_necklaces'),
         types.InlineKeyboardButton(content_cfg.catalog_menu_brooches_category, callback_data='catalog_brooches'),
+        types.InlineKeyboardButton(content_cfg.catalog_menu_pendants_category, callback_data='catalog_pendants'),
+        types.InlineKeyboardButton(content_cfg.catalog_menu_chains_category, callback_data='catalog_chains'),
+        types.InlineKeyboardButton(content_cfg.catalog_menu_rings_category, callback_data='catalog_rings'),
         types.InlineKeyboardButton(content_cfg.catalog_menu_back, callback_data='back_to_main')
     ]
     markup.add(*buttons)

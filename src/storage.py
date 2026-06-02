@@ -78,6 +78,21 @@ class Storage:
                     ORDER BY article_number;
                 """)
                 return cur.fetchall()
+            
+    def get_category_products(self, category: str) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT
+                        article_number,
+                        name,
+                        price,
+                        image_dir
+                    FROM products
+                    WHERE category = %s
+                    ORDER BY article_number;
+                """, (category,))
+                return cur.fetchall()
     
     def get_product_by_article_number(self, article_number: int) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -101,41 +116,21 @@ class Storage:
     def add_to_cart(self, tg_user_id: int, article_number: int, quantity: int = 1) -> bool:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
-                cur.execute("SELECT id FROM users WHERE tg_user_id = %s", (tg_user_id,))
-                user_row = cur.fetchone()
-                if not user_row:
-                    self.logger.warning(f"User {tg_user_id} not found")
-                    return False
-                user_id = user_row['id']
-                
-                cur.execute("SELECT id FROM products WHERE article_number = %s", (article_number,))
-                product_row = cur.fetchone()
-                if not product_row:
-                    self.logger.warning(f"Product with article {article_number} not found")
-                    return False
-                product_id = product_row['id']
-                
                 cur.execute("""
-                    SELECT id, quantity 
-                    FROM cart 
-                    WHERE user_id = %s AND product_id = %s
-                """, (user_id, product_id))
-                existing = cur.fetchone()
-                
-                if existing:
-                    new_quantity = existing['quantity'] + quantity
-                    cur.execute("""
-                        UPDATE cart 
-                        SET quantity = %s, updated_at = NOW()
-                        WHERE id = %s
-                    """, (new_quantity, existing['id']))
-                else:
-                    cur.execute("""
-                        INSERT INTO cart (user_id, product_id, quantity)
-                        VALUES (%s, %s, %s)
-                    """, (user_id, product_id, quantity))
-                
-                return True 
+                    INSERT INTO cart (user_id, product_id, quantity)
+                    SELECT 
+                        u.id, 
+                        p.id, 
+                        %s
+                    FROM users u
+                    INNER JOIN products p ON p.article_number = %s
+                    WHERE u.tg_user_id = %s
+                    ON CONFLICT (user_id, product_id) DO UPDATE
+                    SET quantity = cart.quantity + EXCLUDED.quantity,
+                        updated_at = NOW()
+                    RETURNING id;
+                """, (quantity, article_number, tg_user_id))
+                return cur.fetchone() is not None
     
     def close(self):
         self.pool.closeall()

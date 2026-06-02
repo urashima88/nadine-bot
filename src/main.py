@@ -1,7 +1,7 @@
 
 import telebot
 
-from src.handlers import setup_handlers
+from src.handlers.setup import setup_handlers
 from src.logging.logger import setup_logger
 from src.storage import Storage
 from src.config.config import Config, load_config

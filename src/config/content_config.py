@@ -1,19 +1,22 @@
+from typing import Dict
 
 class ContentConfig:
     catalog_text: str = "🎁 *Каталог товаров*\n\nВыберите категорию:"
     all_product_text: str = "📋 *Все товары:*\n\n"
     user_cart_text: str = "🛒 *Ваша корзина:*\n\n"
     cart_item_text: str = (
-        "• Nd\\_{article_number}\n"
+        "• Nd\\_{article_number:05d}\n"
         "  Цена: {price} ₽ x {quantity} = {item_total} ₽\n\n"
     )
     cart_total_text: str = "💰 *Итого: {total} ₽*"
     product_text: str = (
-        "✨ *Nd_{article_number}*\n\n"
+        "🔖 *{name}*\n\n"
+        "✨ *Nd_{article_number:05d}*\n\n"
         "💰 *Цена:* {price} ₽\n"
     )
     product_details_text: str = (
-        "✨ *Nd_{article_number}*\n\n"
+        "🔖 *{name}*\n\n"
+        "✨ *Nd_{article_number:05d}*\n\n"
         "📝 *Описание:*\n{description}\n"
         "💰 *Цена:* {price} ₽\n"
         "⛓️ *Материалы:* {materials}\n"
@@ -42,7 +45,31 @@ class ContentConfig:
     catalog_menu_earrings_category: str = 'Серьги'
     catalog_menu_necklaces_category: str = 'Ожерелья'
     catalog_menu_brooches_category: str = 'Броши'
+    catalog_menu_pendants_category: str = 'Кулоны'
+    catalog_menu_chains_category: str = 'Цепочки'
+    catalog_menu_rings_category: str = 'Кольца'
     catalog_menu_back: str = 'Назад'
+    
+    eng2ru_category_map: Dict[str, str] = {
+        "bracelets": "браслеты",
+        "earrings": "серьги",
+        "necklaces": "ожерелья",
+        "brooches": "броши",
+        "pendants": "кулоны",
+        "chains": "цепочки",
+        "rings": "кольца",
+    }
+    
+    category2text_map: Dict[str, str] = {
+        "all": "📋 *Все товары:*\n\n",
+        "bracelets": "📿 *Браслеты:*\n\n",
+        "earrings": "💎 *Серьги:*\n\n",
+        "necklaces": "💫 *Ожерелья:*\n\n",
+        "brooches": "🦋 *Броши:*\n\n",
+        "pendants": "🔮 *Кулоны:*\n\n",
+        "chains": "⛓️ *Цепочки:*\n\n",
+        "rings": "💍 *Кольца:*\n\n"
+    }
     
     @classmethod
     def get_welcome_message(cls, name: str) -> str:
@@ -58,7 +85,7 @@ class ContentConfig:
     ):
         return cls.cart_item_text.format(
             article_number=article_number,
-            price=round(price, 2),
+            price=round(float(price), 2),
             quantity=quantity,
             item_total=round(item_total, 2)
         )
@@ -68,8 +95,8 @@ class ContentConfig:
         return cls.cart_total_text.format(total=round(total, 2))
     
     @classmethod
-    def get_product_text(cls, article_number: int, price: float):
-        return cls.product_text.format(article_number=article_number, price=round(price, 2))
+    def get_product_text(cls, name: str, article_number: int, price: float):
+        return cls.product_text.format(name=name.capitalize(), article_number=article_number, price=round(float(price), 2))
     
     @classmethod
     def get_product_details_text(
@@ -83,7 +110,7 @@ class ContentConfig:
         return cls.product_details_text.format(
             article_number=article_number,
             description=description,
-            price=round(price, 2),
+            price=round(float(price), 2),
             materials=materials,
             category=category
         )
