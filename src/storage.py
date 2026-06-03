@@ -1,9 +1,16 @@
 from logging import Logger
 from typing import List, Tuple, Optional, Any, Dict
 from contextlib import contextmanager
+from enum import IntEnum
 
 import psycopg2
 from psycopg2 import pool, sql, extras
+
+class AddToCartResult(IntEnum):
+    SUCCESS = 0
+    PRODUCT_NOT_FOUND = 1
+    LIMIT_EXCEEDED = 2
+    USER_NOT_FOUND = 3 
 
 class Storage:
     def __init__(self, conn_args: Dict[str, str], logger: Logger, min_conn: int = 1, max_conn: int = 10):
@@ -104,6 +111,8 @@ class Storage:
                         p.price,
                         p.category,
                         p.image_dir,
+                        p.production_time,
+                        p.prod_limit,
                         COALESCE(string_agg(m.name, ', '), '') AS materials_list
                     FROM products p
                     LEFT JOIN product_materials pm ON p.id = pm.product_id
@@ -113,24 +122,51 @@ class Storage:
                 """, (article_number,))
                 return cur.fetchone()
     
-    def add_to_cart(self, tg_user_id: int, article_number: int, quantity: int = 1) -> bool:
+    def add_to_cart(self, tg_user_id: int, article_number: int, quantity: int = 1) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
+                    WITH 
+                    user_product AS (
+                        SELECT u.id AS user_id, p.id AS product_id, p.prod_limit
+                        FROM users u
+                        CROSS JOIN products p
+                        WHERE u.tg_user_id = %s AND p.article_number = %s
+                    ),
+                    current_qty AS (
+                        SELECT COALESCE(c.quantity, 0) AS qty
+                        FROM user_product up
+                        LEFT JOIN cart c ON c.user_id = up.user_id AND c.product_id = up.product_id
+                    ),
+                    check_limit AS (
+                        SELECT 
+                            (cq.qty + %s) AS new_qty,
+                            CASE 
+                                WHEN up.prod_limit IS NULL THEN true
+                                ELSE (cq.qty + %s) <= up.prod_limit
+                            END AS within_limit
+                        FROM user_product up, current_qty cq
+                    )
                     INSERT INTO cart (user_id, product_id, quantity)
-                    SELECT 
-                        u.id, 
-                        p.id, 
-                        %s
-                    FROM users u
-                    INNER JOIN products p ON p.article_number = %s
-                    WHERE u.tg_user_id = %s
+                    SELECT up.user_id, up.product_id, cq.qty + %s
+                    FROM user_product up, current_qty cq, check_limit cl
+                    WHERE cl.within_limit = true
                     ON CONFLICT (user_id, product_id) DO UPDATE
-                    SET quantity = cart.quantity + EXCLUDED.quantity,
+                    SET quantity = EXCLUDED.quantity,
                         updated_at = NOW()
-                    RETURNING id;
-                """, (quantity, article_number, tg_user_id))
-                return cur.fetchone() is not None
+                    RETURNING quantity;
+                """, (tg_user_id, article_number, quantity, quantity, quantity))
+                row = cur.fetchone()
+                if row:
+                    return AddToCartResult.SUCCESS, row["quantity"]
+                else:
+                    cur.execute("SELECT 1 FROM products WHERE article_number = %s", (article_number,))
+                    if not cur.fetchone():
+                        return AddToCartResult.PRODUCT_NOT_FOUND, 0
+                    cur.execute("SELECT 1 FROM users WHERE tg_user_id = %s", (tg_user_id,))
+                    if not cur.fetchone():
+                        return AddToCartResult.USER_NOT_FOUND, 0
+                    return AddToCartResult.LIMIT_EXCEEDED, 0
     
     def close(self):
         self.pool.closeall()

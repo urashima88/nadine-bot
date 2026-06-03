@@ -23,8 +23,18 @@ def catalog_menu_keyboard(content_cfg: ContentConfig):
         types.InlineKeyboardButton(content_cfg.catalog_menu_brooches_category, callback_data='catalog_brooches'),
         types.InlineKeyboardButton(content_cfg.catalog_menu_pendants_category, callback_data='catalog_pendants'),
         types.InlineKeyboardButton(content_cfg.catalog_menu_chains_category, callback_data='catalog_chains'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_rings_category, callback_data='catalog_rings'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_back, callback_data='back_to_main')
+        types.InlineKeyboardButton(content_cfg.catalog_menu_rings_category, callback_data='catalog_rings')
+    ]
+    markup.add(*buttons)
+    return markup
+
+def catalog_control_keyboard(content_cfg: ContentConfig):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton(content_cfg.catalog_control_next_message),
+        types.KeyboardButton(content_cfg.catalog_control_next5_message),
+        types.KeyboardButton(content_cfg.catalog_control_stop_message),
+        types.KeyboardButton(content_cfg.catalog_control_back_to_main_menu_message)
     ]
     markup.add(*buttons)
     return markup
@@ -42,7 +52,6 @@ def product_keyboard(content_cfg: ContentConfig, article_number):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
         types.InlineKeyboardButton(content_cfg.add_to_cart_message, callback_data=f'add_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.back_to_catalog_message, callback_data='back_to_catalog')
     ]
     markup.add(*buttons)
     return markup
@@ -52,7 +61,6 @@ def cart_keyboard(content_cfg: ContentConfig):
     buttons = [
         types.InlineKeyboardButton(content_cfg.empty_cart_message, callback_data='clear_cart'),
         types.InlineKeyboardButton(content_cfg.place_order_message, callback_data='checkout'),
-        types.InlineKeyboardButton(content_cfg.back_message, callback_data='back_to_main')
     ]
     markup.add(*buttons)
     return markup
