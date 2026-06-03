@@ -7,7 +7,8 @@ class ContentConfig:
     all_product_text: str = "📋 *Все товары:*\n\n"
     user_cart_text: str = "🛒 *Ваша корзина:*\n\n"
     cart_item_text: str = (
-        "• Nd\\_{article_number:05d}\n"
+        "• *{name}*\n"
+        "  Nd\\_{article_number:05d}\n"
         "  Цена: {price} ₽ x {quantity} = {item_total} ₽\n\n"
     )
     cart_total_text: str = "💰 *Итого: {total} ₽*"
@@ -30,13 +31,25 @@ class ContentConfig:
     
     product_added_to_cart_message: str = "✅ Товар добавлен в корзину! Теперь в корзине: {quantity} шт."
     
+    admin_contacts: str = (
+        "📞 *Контакты Nadine:*\n\n"
+        "👤 Telegram: [@{tg_username}](https://t.me/{tg_username})\n"
+        "📱 Телефон: [{phone}](tel:{phone})"
+    )
+    
+    about_text: str = (
+        "👤 *О Nadine:*\n\n"
+        "..."
+    )
+    
     catalog_message: str = "🛍️ Каталог товаров"
     cart_message: str = "🛒 Корзина"
     contact_with_message: str = "📞 Связаться с Nadine"
     about_message: str = "ℹ️ О Nadine"
     add_to_cart_message: str = "🛒 Добавить в корзину"
     more_detailed_message: str = "📋 Подробнее"
-    empty_cart_message: str = "🔄 Очистить корзину"
+    edit_cart_message: str = "✏️ Редактировать корзину"
+    clear_cart_message: str = "🔄 Очистить корзину"
     place_order_message: str = "💳 Оформить заказ"
     cart_is_empty_message: str = "Ваша корзина пуста"
     catalog_is_empty_message: str = "Каталог пуст"
@@ -47,11 +60,18 @@ class ContentConfig:
     session_not_found_message: str = "⚠️ Сессия не найдена. Начните заново из каталога"
     all_products_displayed_message: str = "✅ Все товары уже показаны"
     main_menu_message: str = "Главное меню:"
+    completely_cleared_cart_message: str = "✅ Корзина полностью очищена"
+    cart_is_empty_or_failed_to_clear_message: str = "❌ Корзина уже пуста или не удалось очистить корзину"
     
     catalog_control_next_message: str = "➡️ Следующий товар"
     catalog_control_next5_message: str = "5️⃣ Следующие 5"
     catalog_control_stop_message: str = "⏹ Остановить показ"
     catalog_control_back_to_main_menu_message: str = "◀️ В главное меню"
+    
+    cart_control_next_message: str = "➡️ Следующий товар в корзине"
+    cart_control_next5_message: str = "5️⃣ Следующие 5 товаров в корзине"
+    cart_control_stop_message: str = "⏹ Остановить редактирование"
+    cart_control_back_to_main_menu_message: str = "◀️ Вернуться в главное меню"
     
     catalog_menu_all_products_text: str = "Все товары"   
     catalog_menu_bracelets_category: str = "Браслеты"
@@ -88,6 +108,22 @@ class ContentConfig:
         "Всего товаров: {number_products}\n"
         "Используйте кнопки внизу для навигации."
     )
+    edit_cart_text: str = (
+        "✏️ Режим редактирования корзины\n"
+        "Используйте кнопки внизу для навигации."
+    )
+    edit_cart_decrease_product_message: str = (
+        "➖"
+    )
+    edit_cart_quantity_product_message: str = (
+        "{quantity}"
+    )
+    edit_cart_increase_product_message: str = (
+        "➕"
+    )
+    edit_cart_delete_product_message: str = (
+        "🗑 Удалить"
+    )
     
     production_time_unit_1: str = "день"
     production_time_unit_234: str = "дня"
@@ -100,12 +136,14 @@ class ContentConfig:
     @classmethod
     def get_cart_item_text(
         cls,
+        name: str,
         article_number: int,
         price: float,
         quantity: int,
         item_total: float
     ):
         return cls.cart_item_text.format(
+            name=name.capitalize(),
             article_number=article_number,
             price=round(float(price), 2),
             quantity=quantity,
@@ -158,3 +196,9 @@ class ContentConfig:
         
     def get_product_addded_to_cart_message(cls, quantity: int):
         return cls.product_added_to_cart_message.format(quantity=quantity)
+    
+    def get_admin_contacts(cls, tg_username: str, phone: str):
+        return cls.admin_contacts.format(tg_username=tg_username, phone=phone)
+    
+    def get_edit_cart_quantity_product_message(cls, quantity: int):
+        return cls.edit_cart_quantity_product_message.format(quantity=quantity)

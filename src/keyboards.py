@@ -59,8 +59,31 @@ def product_keyboard(content_cfg: ContentConfig, article_number):
 def cart_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.empty_cart_message, callback_data='clear_cart'),
+        types.InlineKeyboardButton(content_cfg.edit_cart_message, callback_data='edit_cart'),
+        types.InlineKeyboardButton(content_cfg.clear_cart_message, callback_data='clear_cart'),
         types.InlineKeyboardButton(content_cfg.place_order_message, callback_data='checkout'),
+    ]
+    markup.add(*buttons)
+    return markup
+
+def edit_cart_control_keyboard(content_cfg: ContentConfig) -> types.ReplyKeyboardMarkup:
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton(content_cfg.cart_control_next_message),
+        types.KeyboardButton(content_cfg.cart_control_next5_message),
+        types.KeyboardButton(content_cfg.cart_control_stop_message),
+        types.KeyboardButton(content_cfg.cart_control_back_to_main_menu_message)
+    ]
+    markup.add(*buttons)
+    return markup
+
+def edit_product_keyboard(content_config: ContentConfig, article_number: int, quantity: str):
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    buttons = [
+        types.InlineKeyboardButton(content_config.edit_cart_decrease_product_message, callback_data=f"edit_decrease_{article_number}"),
+        types.InlineKeyboardButton(quantity, callback_data="ignore"),
+        types.InlineKeyboardButton(content_config.edit_cart_increase_product_message, callback_data=f"edit_increase_{article_number}"),
+        types.InlineKeyboardButton(content_config.edit_cart_delete_product_message, callback_data=f"edit_delete_{article_number}")
     ]
     markup.add(*buttons)
     return markup

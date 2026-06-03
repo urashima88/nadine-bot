@@ -167,7 +167,56 @@ class Storage:
                     if not cur.fetchone():
                         return AddToCartResult.USER_NOT_FOUND, 0
                     return AddToCartResult.LIMIT_EXCEEDED, 0
-    
+                
+    def get_admin_contacts(self):
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT
+                        tg_username,
+                        phone
+                    FROM users
+                    WHERE is_admin;
+                """)
+                return cur.fetchone()
+            
+    def clear_cart(self, tg_user_id: int) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    DELETE FROM cart
+                    WHERE user_id = (SELECT id FROM users WHERE tg_user_id = %s)
+                """, (tg_user_id,))
+                return cur.rowcount > 0
+            
+    def remove_cart_item(self, tg_user_id: int, article_number: int) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    DELETE FROM cart
+                    USING users u, products p
+                    WHERE cart.user_id = u.id
+                    AND cart.product_id = p.id
+                    AND u.tg_user_id = %s
+                    AND p.article_number = %s
+                    RETURNING cart.id
+                """, (tg_user_id, article_number))
+                return cur.fetchone() is not None
+            
+    def update_cart_quantity(self, tg_user_id: int, article_number: int, new_quantity: int) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                if new_quantity <= 0:
+                    return self.remove_cart_item(tg_user_id, article_number)
+                cur.execute("""
+                    UPDATE cart
+                    SET quantity = %s, updated_at = NOW()
+                    WHERE user_id = (SELECT id FROM users WHERE tg_user_id = %s)
+                    AND product_id = (SELECT id FROM products WHERE article_number = %s)
+                    RETURNING id
+                """, (new_quantity, tg_user_id, article_number))
+                return cur.fetchone() is not None
+                
     def close(self):
         self.pool.closeall()
         self.logger.info("PostgreSQL connection pool closed")
