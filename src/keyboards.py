@@ -2,39 +2,39 @@ from telebot import types
 
 from src.config.content_config import ContentConfig
 
-def main_menu_keyboard(content_cfg: ContentConfig):
+def common_main_menu_keyboard(content_cfg: ContentConfig):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
-        types.KeyboardButton(content_cfg.catalog_message),
-        types.KeyboardButton(content_cfg.cart_message),
-        types.KeyboardButton(content_cfg.contact_with_message),
-        types.KeyboardButton(content_cfg.about_message)
+        types.KeyboardButton(content_cfg.catalog.message),
+        types.KeyboardButton(content_cfg.cart.message),
+        types.KeyboardButton(content_cfg.common.admin.contacts.message),
+        types.KeyboardButton(content_cfg.common.admin.about.message)
     ]
     markup.add(*buttons)
     return markup
 
-def catalog_menu_keyboard(content_cfg: ContentConfig):
+def catalog_category_menu_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.catalog_menu_all_products_text, callback_data='catalog_all'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_bracelets_category, callback_data='catalog_bracelets'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_earrings_category, callback_data='catalog_earrings'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_necklaces_category, callback_data='catalog_necklaces'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_brooches_category, callback_data='catalog_brooches'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_pendants_category, callback_data='catalog_pendants'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_chains_category, callback_data='catalog_chains'),
-        types.InlineKeyboardButton(content_cfg.catalog_menu_rings_category, callback_data='catalog_rings')
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.all_products.message, callback_data='catalog_all'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.bracelets.message, callback_data='catalog_bracelets'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.earrings.message, callback_data='catalog_earrings'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.necklaces.message, callback_data='catalog_necklaces'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.brooches.message, callback_data='catalog_brooches'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.pendants.message, callback_data='catalog_pendants'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.chains.message, callback_data='catalog_chains'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.rings.message, callback_data='catalog_rings')
     ]
     markup.add(*buttons)
     return markup
 
-def catalog_control_keyboard(content_cfg: ContentConfig):
+def catalog_control_show_mode_keyboard(content_cfg: ContentConfig):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
-        types.KeyboardButton(content_cfg.catalog_control_next_message),
-        types.KeyboardButton(content_cfg.catalog_control_next5_message),
-        types.KeyboardButton(content_cfg.catalog_control_stop_message),
-        types.KeyboardButton(content_cfg.catalog_control_back_to_main_menu_message)
+        types.KeyboardButton(content_cfg.catalog.control_show.next.message),
+        types.KeyboardButton(content_cfg.catalog.control_show.next5.message),
+        types.KeyboardButton(content_cfg.catalog.control_show.stop.message),
+        types.KeyboardButton(content_cfg.catalog.control_show.go_back_to_main_menu.message)
     ]
     markup.add(*buttons)
     return markup
@@ -42,8 +42,8 @@ def catalog_control_keyboard(content_cfg: ContentConfig):
 def catalog_product_keyboard(content_cfg: ContentConfig, article_number):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.more_detailed_message, callback_data=f'detail_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.add_to_cart_message, callback_data=f'add_{article_number}')
+        types.InlineKeyboardButton(content_cfg.product.details.message, callback_data=f'details_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.product.add_to_cart.message, callback_data=f'add_{article_number}')
     ]
     markup.add(*buttons)
     return markup
@@ -51,7 +51,7 @@ def catalog_product_keyboard(content_cfg: ContentConfig, article_number):
 def product_keyboard(content_cfg: ContentConfig, article_number):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.add_to_cart_message, callback_data=f'add_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.product.add_to_cart.message, callback_data=f'add_{article_number}'),
     ]
     markup.add(*buttons)
     return markup
@@ -59,31 +59,31 @@ def product_keyboard(content_cfg: ContentConfig, article_number):
 def cart_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.edit_cart_message, callback_data='edit_cart'),
-        types.InlineKeyboardButton(content_cfg.clear_cart_message, callback_data='clear_cart'),
-        types.InlineKeyboardButton(content_cfg.place_order_message, callback_data='checkout'),
+        types.InlineKeyboardButton(content_cfg.cart.edit.message, callback_data='edit_cart'),
+        types.InlineKeyboardButton(content_cfg.cart.clear.message, callback_data='clear_cart'),
+        types.InlineKeyboardButton(content_cfg.order.place.message, callback_data='checkout'),
     ]
     markup.add(*buttons)
     return markup
 
-def edit_cart_control_keyboard(content_cfg: ContentConfig) -> types.ReplyKeyboardMarkup:
+def cart_control_edit_mode_keyboard(content_cfg: ContentConfig) -> types.ReplyKeyboardMarkup:
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
-        types.KeyboardButton(content_cfg.cart_control_next_message),
-        types.KeyboardButton(content_cfg.cart_control_next5_message),
-        types.KeyboardButton(content_cfg.cart_control_stop_message),
-        types.KeyboardButton(content_cfg.cart_control_back_to_main_menu_message)
+        types.KeyboardButton(content_cfg.cart.control_edit.next.message),
+        types.KeyboardButton(content_cfg.cart.control_edit.next5.message),
+        types.KeyboardButton(content_cfg.cart.control_edit.stop.message),
+        types.KeyboardButton(content_cfg.cart.control_edit.go_back_to_main_menu.message)
     ]
     markup.add(*buttons)
     return markup
 
-def edit_product_keyboard(content_config: ContentConfig, article_number: int, quantity: str):
+def cart_edit_product_keyboard(content_config: ContentConfig, article_number: int, quantity: str):
     markup = types.InlineKeyboardMarkup(row_width=3)
     buttons = [
-        types.InlineKeyboardButton(content_config.edit_cart_decrease_product_message, callback_data=f"edit_decrease_{article_number}"),
+        types.InlineKeyboardButton(content_config.cart.edit.product.decrease.message, callback_data=f"decrease_product_{article_number}"),
         types.InlineKeyboardButton(quantity, callback_data="ignore"),
-        types.InlineKeyboardButton(content_config.edit_cart_increase_product_message, callback_data=f"edit_increase_{article_number}"),
-        types.InlineKeyboardButton(content_config.edit_cart_delete_product_message, callback_data=f"edit_delete_{article_number}")
+        types.InlineKeyboardButton(content_config.cart.edit.product.increase.message, callback_data=f"increase_product_{article_number}"),
+        types.InlineKeyboardButton(content_config.cart.edit.product.delete.message, callback_data=f"delete_product_{article_number}")
     ]
     markup.add(*buttons)
     return markup

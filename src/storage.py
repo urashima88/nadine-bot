@@ -54,7 +54,7 @@ class Storage:
                 row = cur.fetchone()
                 return row['id'] if row else None
             
-    def get_cart_items(self, tg_user_id: int) -> List[Dict[str, Any]]:
+    def get_cart_products(self, tg_user_id: int) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
@@ -189,7 +189,7 @@ class Storage:
                 """, (tg_user_id,))
                 return cur.rowcount > 0
             
-    def remove_cart_item(self, tg_user_id: int, article_number: int) -> bool:
+    def remove_cart_product(self, tg_user_id: int, article_number: int) -> bool:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""

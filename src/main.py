@@ -29,6 +29,8 @@ def main():
     }
     
     db = Storage(conn_args, logger)
+    
+    logger.info("Connected to db")
 
     bot = telebot.TeleBot(cfg.token)
 
