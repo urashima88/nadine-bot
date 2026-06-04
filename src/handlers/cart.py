@@ -15,6 +15,7 @@ from src.states.cart_session import (
     get_cart_session, 
     set_cart_session, 
     edit_cart_session,
+    add_control_edit_message_id,
     delete_cart_session
 )
 
@@ -54,7 +55,8 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             reply_markup=cart_keyboard(content_cfg),
             parse_mode="Markdown"
         )
-        set_cart_session(user_id, cart_message_id=sent.message_id)
+        
+        set_cart_session(user_id, cart_text_message_id=message.id, cart_message_id=sent.message_id)
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('add_'))
     def add_to_cart(call):
@@ -78,6 +80,40 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             show_alert = False
         bot.answer_callback_query(call.id, message, show_alert=show_alert)
         
+    def delete_message(chat_id: int, message_id: int):
+        logger.debug("delete_message CALL")
+        
+        try:
+            bot.delete_message(chat_id, message_id)
+        except Exception as e:
+            logger.warning(f"Failed to delete message: {e}")
+        
+    def delete_all_edit_messages(chat_id: int, user_id: int):
+        logger.debug("delete_all_edit_messages CALL")
+        
+        session = get_cart_session(user_id)
+        if not session:
+            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
+            return 
+        
+        for message_id in session["article_number_to_message_id_map"].values():
+            delete_message(chat_id, message_id)
+                
+        for message_id in session["cart_control_edit_message_ids"]:
+            delete_message(chat_id, message_id)
+        
+    def delete_all_messages(chat_id: int, user_id: int):
+        logger.debug("delete_all_messages CALL")
+        
+        session = get_cart_session(user_id)
+        if not session:
+            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
+            return 
+        
+        delete_message(chat_id, session["cart_text_message_id"])
+        delete_message(chat_id, session["cart_message_id"])
+        delete_all_edit_messages(chat_id, user_id)
+        
     @bot.callback_query_handler(func=lambda call: call.data == "clear_cart")
     def clear_cart(call):
         logger.debug("clear_cart CALL")
@@ -89,13 +125,9 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             if not session:
                 bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
                 return
-            cart_message_id = session["cart_message_id"]
-            try:
-                bot.delete_message(call.message.chat.id, cart_message_id)
-            except Exception as e:
-                logger.warning(f"Failed to delete message: {e}")
-            delete_cart_session(tg_user_id)
             bot.answer_callback_query(call.id, content_cfg.cart.completely_cleared.message, show_alert=False)
+            delete_all_messages(call.message.chat.id, tg_user_id)
+            delete_cart_session(tg_user_id)
         else:
             bot.answer_callback_query(call.id, content_cfg.cart.is_empty_or_failed_to_clear.message, show_alert=True)
             
@@ -103,9 +135,14 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
     def start_edit_cart(call):
         logger.debug("start_edit_cart CALL")
         
+        user_id = call.from_user.id
+        session = get_cart_session(user_id)
+        if not session:
+            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            return 
+        
         bot.answer_callback_query(call.id)
         
-        user_id = call.from_user.id
         cart_products = db.get_cart_products(user_id)
         if not cart_products:
             bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
@@ -122,15 +159,23 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
             return
         
-        bot.send_message(
+        sent = bot.send_message(
             call.message.chat.id,
             content_cfg.cart.edit.text,
             reply_markup=cart_control_edit_mode_keyboard(content_cfg)
         )
-        send_next_product(call.message.chat.id, user_id)
         
-    def send_next_product(chat_id: int, user_id: int):
+        success = add_control_edit_message_id(user_id, sent.message_id)
+        if not success:
+            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            return
+        
+        send_next_product(call.message, user_id)
+        
+    def send_next_product(message, user_id: int):
         logger.debug("send_next_product CALL")
+        
+        chat_id = message.chat.id
         
         session = get_cart_session(user_id)
         if not session:
@@ -160,6 +205,10 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             session["article_number_to_message_id_map"][article_number] = sent.message_id
         else:
             bot.send_message(chat_id, content_cfg.cart.edit.product.not_found.message)
+        
+        session["index"] += 1
+        if session["index"] >= session["total"]:
+            send_no_other_products_message(message, user_id)
         
     def edit_product(chat_id: int, user_id: int, article_number: int):
         logger.debug("edit_product CALL")
@@ -219,14 +268,13 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         if session["article_number_to_product_map"].get(article_number):
             del session["article_number_to_product_map"][article_number]
             session["article_numbers"].remove(article_number)
+            
         session["total"] = len(session["article_numbers"])
         if session["index"] >= session["total"]:
             session["index"] = max(0, session["total"] - 1)
-        try:
-            bot.delete_message(chat_id, session["article_number_to_message_id_map"][article_number])
-        except:
-            pass
-        if session["article_number_to_message_id_map"].get(article_number):
+        
+        if article_number in session["article_number_to_message_id_map"]:
+            delete_message(chat_id, session["article_number_to_message_id_map"][article_number])
             del session["article_number_to_message_id_map"][article_number]
     
     @bot.callback_query_handler(func=lambda call: call.data.startswith('decrease_product_'))  
@@ -267,10 +315,11 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         if not session:
             bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
             return
-        clear_product_info(call.message.chat.id, session, user_id, article_number) 
-        if not session["article_number_to_product_map"]:
-            bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
-            return
+        if session["total"] > 0:
+            clear_product_info(call.message.chat.id, session, user_id, article_number) 
+            if not session["article_number_to_product_map"]:
+                bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
+                return
         bot.answer_callback_query(call.id)
         
     @bot.callback_query_handler(func=lambda call: call.data == "ignore")
@@ -278,6 +327,14 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         logger.debug("ignore_callback CALL")
         
         bot.answer_callback_query(call.id)
+        
+    def send_no_other_products_message(message, user_id: int):
+        logger.debug("send_no_other_products_message CALL")
+        
+        sent = bot.send_message(message.chat.id, content_cfg.cart.control_edit.no_other_products.message)
+        success = add_control_edit_message_id(user_id, sent.message_id)
+        if not success:
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
         
     def send_products(message, count):
         logger.debug("send_products CALL")
@@ -287,37 +344,39 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         if not session:
             bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
             return
-        new_index = session["index"] + count
-        if new_index >= session["total"]:
-            new_index = session["total"] - 1
-        if new_index < 0:
-            new_index = 0
-        session["index"] = new_index
-        send_next_product(message.chat.id, user_id)
         
-    def delete_all_edit_product_messages(chat_id: int, user_id: int):
-        logger.debug("delete_all_edit_product_messages CALL")
+        total = session["total"]
+        index = session["index"]
         
-        session = get_cart_session(user_id)
-        if not session:
-            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
-            return 
-        for message_id in session["article_number_to_message_id_map"].values():
-            try:
-                bot.delete_message(chat_id, message_id)
-            except Exception as e:
-                logger.warning(f"Failed to delete message: {e}")
-                bot.send_message(chat_id, content_cfg.control_edit.delete_edit_messages_error.message)
-    
+        if index >= total:
+            send_no_other_products_message(message, user_id)
+            return
+        
+        to_send = min(count, total-index)        
+        for _ in range(to_send):
+            send_next_product(message, user_id)
+        
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.next.message)
     def send_next_one(message):
         logger.debug("send_next_one CALL")
+        
+        user_id = message.from_user.id
+        success = add_control_edit_message_id(user_id, message.id)
+        if not success:
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            return
         
         send_products(message, 1)
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.next5.message)
     def send_next_five(message):
         logger.debug("send_next_five CALL")
+        
+        user_id = message.from_user.id
+        success = add_control_edit_message_id(user_id, message.id)
+        if not success:
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            return
         
         send_products(message, 5)
         
@@ -326,7 +385,17 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         logger.debug("stop_edit CALL")
         
         user_id = message.from_user.id
-        delete_all_edit_product_messages(message.chat.id, user_id)
+        session = get_cart_session(user_id)
+        if not session:
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            return
+        
+        success = add_control_edit_message_id(user_id, message.id)
+        if not success:
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            return
+        
+        delete_all_messages(message.chat.id, user_id)
         delete_cart_session(user_id)
         show_cart(message)
         bot.send_message(
@@ -340,8 +409,15 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         logger.debug("go_back_to_main_menu CALL")
         
         user_id = message.from_user.id
-        delete_all_edit_product_messages(message.chat.id, user_id)
-        delete_cart_session(user_id)
+        session = get_cart_session(user_id)
+        if session:
+            success = add_control_edit_message_id(user_id, message.id)
+            if not success:
+                bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+                return
+            
+            delete_all_messages(message.chat.id, user_id)
+            delete_cart_session(user_id)
         bot.send_message(
             message.chat.id, 
             content_cfg.cart.main_menu.message,

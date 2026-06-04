@@ -78,9 +78,6 @@ class ContentConfig:
             "go_back_to_main_menu": {"message": "◀️ Вернуться в главное меню"},
             "no_other_products": {
                 "message": "Нет других товаров в корзине"
-            },
-            "delete_edit_messages_error": {
-                "message": "⚠️ Не удалось удалить сообщения редактирования товаров"
             }
         }
     })
