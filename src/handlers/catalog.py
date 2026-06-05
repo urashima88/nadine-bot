@@ -13,9 +13,13 @@ from src.keyboards import (
     catalog_product_keyboard
 )
 from src.states.catalog_session import set_session, delete_session, get_session
+from src.utils.wrappers import error_handler
 
 def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
+    err_handler = error_handler(bot, content_cfg, logger)
+    
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.message)
+    @err_handler
     def show_catalog(message):
         logger.debug("show_catalog CALL")
         
@@ -28,6 +32,7 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         )
     
     @bot.callback_query_handler(func=lambda call: call.data.startswith('catalog_'))
+    @err_handler
     def handle_catalog_choice(call):
         logger.debug("handle_catalog_choice CALL")
         
@@ -126,18 +131,21 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         send_next_products(message.chat.id, user_id, count)
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.control_show.next.message)
+    @err_handler
     def send_next_one(message):
         logger.debug("send_next_one CALL")
         
         send_products(message, 1)
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.control_show.next5.message)
+    @err_handler
     def send_next_five(message):
         logger.debug("send_next_five CALL")
         
         send_products(message, 5)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.control_show.stop.message)
+    @err_handler
     def stop_show_catalog(message):
         logger.debug("stop_show_catalog CALL")
         
@@ -161,6 +169,7 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         )
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.control_show.go_back_to_main_menu.message)
+    @err_handler
     def go_back_to_main_menu(message):
         logger.debug("go_back_to_main_menu CALL")
         

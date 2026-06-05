@@ -6,11 +6,13 @@ from src.storage import Storage
 from src.config.config import Config
 from src.config.content_config import ContentConfig
 from src.keyboards import common_main_menu_keyboard
-
+from src.utils.wrappers import error_handler
 
 def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
+    err_handler = error_handler(bot, content_cfg, logger)
     
     @bot.message_handler(commands=['start'])
+    @err_handler
     def start(message):
         logger.debug("start CALL")
         
@@ -28,6 +30,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         )
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.common.admin.contacts.message)
+    @err_handler
     def send_admin_contacts(message):
         logger.debug("send_admin_contacts CALL")
         
@@ -41,6 +44,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         )
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.common.admin.about.message)
+    @err_handler
     def send_about_information(message):
         logger.debug("send_about_information CALL")
         

@@ -42,7 +42,7 @@ def main():
     register_cart_handlers(bot, db, cfg, content_cfg, logger)
     
     logger.info("Starting bot...")
-    bot.polling(none_stop=True, interval=2)
+    bot.polling(none_stop=True, interval=2, timeout=40)
 
 if __name__ == '__main__':
     main()

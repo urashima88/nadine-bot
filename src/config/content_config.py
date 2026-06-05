@@ -47,6 +47,9 @@ class ContentConfig:
                 },
                 "error": {
                     "message": "⚠️ Возникла ошибка при редактировании товара"
+                },
+                "prod_limit_exceeded": {
+                    "message": "⚠️ Превышен лимит данного товара. Для добавления большего числа обратитесь к Nadine."
                 }
             }
         },
@@ -163,6 +166,9 @@ class ContentConfig:
         },
         "welcome": {
             "message": "Привет, {name}!\n\nВыбери действие из меню ниже:"
+        },
+        "error": {
+            "message": "⚠️ Непредвиденная ошибка. Повторите позже."
         }
     })
     
@@ -192,9 +198,6 @@ class ContentConfig:
         "not_found": {
             "message": "❌ Товар не найден"
         },
-        "prod_limit_exceeded": {
-            "message": "⚠️ Превышен лимит данного товара. Для добавления большего числа обратитесь к Nadine."
-        },
         "production_time": {
             "unit_1": "день",
             "unit_234": "дня",
@@ -207,6 +210,13 @@ class ContentConfig:
             "message": "💳 Оформить заказ"
         }
     })
+    
+    db: edict = edict({
+        "error": {
+            "message": "⚠️ Ошибка базы данных. Попробуйте позже."
+        }
+    })
+
     
     # cart
     @classmethod

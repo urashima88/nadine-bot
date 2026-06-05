@@ -207,14 +207,18 @@ class Storage:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 if new_quantity <= 0:
-                    return self.remove_cart_item(tg_user_id, article_number)
+                    return self.remove_cart_product(tg_user_id, article_number)
                 cur.execute("""
                     UPDATE cart
                     SET quantity = %s, updated_at = NOW()
                     WHERE user_id = (SELECT id FROM users WHERE tg_user_id = %s)
                     AND product_id = (SELECT id FROM products WHERE article_number = %s)
+                    AND (
+                        (SELECT prod_limit FROM products WHERE article_number = %s) IS NULL
+                        OR %s <= (SELECT prod_limit FROM products WHERE article_number = %s)
+                    )
                     RETURNING id
-                """, (new_quantity, tg_user_id, article_number))
+                """, (new_quantity, tg_user_id, article_number, article_number, new_quantity, article_number))
                 return cur.fetchone() is not None
                 
     def close(self):

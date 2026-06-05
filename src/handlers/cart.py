@@ -18,10 +18,14 @@ from src.states.cart_session import (
     add_control_edit_message_id,
     delete_cart_session
 )
+from src.utils.wrappers import error_handler
 
 def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
     
+    err_handler = error_handler(bot, content_cfg, logger)
+    
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.message)
+    @err_handler
     def show_cart(message): 
         logger.debug("show_cart CALL")
                
@@ -59,6 +63,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         set_cart_session(user_id, cart_text_message_id=message.id, cart_message_id=sent.message_id)
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('add_'))
+    @err_handler
     def add_to_cart(call):
         logger.debug("add_to_cart CALL")
         
@@ -70,10 +75,10 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             message = content_cfg.get_cart_product_added_message(new_quantity)
             show_alert = False
         elif result == AddToCartResult.LIMIT_EXCEEDED:
-            message = content_cfg.product.prod_limit_exceeded.message
+            message = content_cfg.cart.edit.product.prod_limit_exceeded.message
             show_alert = True
         elif result == AddToCartResult.PRODUCT_NOT_FOUND:
-            message = content_cfg.product.not_found.message
+            message = content_cfg.cart.edit.product.not_found.message
             show_alert = False
         else:
             message = content_cfg.cart.add_error_user_not_found.message
@@ -115,6 +120,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         delete_all_edit_messages(chat_id, user_id)
         
     @bot.callback_query_handler(func=lambda call: call.data == "clear_cart")
+    @err_handler
     def clear_cart(call):
         logger.debug("clear_cart CALL")
         
@@ -132,6 +138,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             bot.answer_callback_query(call.id, content_cfg.cart.is_empty_or_failed_to_clear.message, show_alert=True)
             
     @bot.callback_query_handler(func=lambda call: call.data == "edit_cart")
+    @err_handler
     def start_edit_cart(call):
         logger.debug("start_edit_cart CALL")
         
@@ -241,6 +248,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             bot.send_message(chat_id, content_cfg.cart.edit.product.not_found.message)
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('increase_product_'))
+    @err_handler
     def increase_product(call):
         logger.debug("increase_product CALL")
         
@@ -254,10 +262,12 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         product = session["article_number_to_product_map"].get(article_number)
         if product:
             new_quantity = product["quantity"] + 1
-            db.update_cart_quantity(user_id, article_number, new_quantity)
+            success = db.update_cart_quantity(user_id, article_number, new_quantity)
+            if not success:
+                bot.answer_callback_query(call.id, content_cfg.cart.edit.product.prod_limit_exceeded.message, show_alert=True)
+                return 
             product["quantity"] = new_quantity
             edit_product(call.message.chat.id, user_id, article_number)
-            bot.answer_callback_query(call.id)
         else:
             bot.send_message(call.message.chat.id, content_cfg.cart.edit.product.not_found.message)
         
@@ -278,6 +288,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             del session["article_number_to_message_id_map"][article_number]
     
     @bot.callback_query_handler(func=lambda call: call.data.startswith('decrease_product_'))  
+    @err_handler
     def decrease_product(call):
         logger.debug("decrease_product CALL")
         
@@ -294,18 +305,19 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
                 new_quantity = product['quantity'] - 1
                 db.update_cart_quantity(user_id, article_number, new_quantity)
                 product["quantity"] = new_quantity
+                edit_product(call.message.chat.id, user_id, article_number)
             else:
                 clear_product_info(call.message.chat.id, session, user_id, article_number)
                 if not session["article_number_to_product_map"]:
-                    bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message, show_alert=False)
+                    bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
                     return
-
-            edit_product(call.message.chat.id, user_id, article_number)
+                
             bot.answer_callback_query(call.id)
         else:
             bot.send_message(call.message.chat.id, content_cfg.cart.edit.product.not_found.message)
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_product_'))
+    @err_handler
     def delete_product(call):
         logger.debug("delete_product CALL")
         
@@ -323,6 +335,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         bot.answer_callback_query(call.id)
         
     @bot.callback_query_handler(func=lambda call: call.data == "ignore")
+    @err_handler
     def ignore_callback(call):
         logger.debug("ignore_callback CALL")
         
@@ -357,6 +370,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             send_next_product(message, user_id)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.next.message)
+    @err_handler
     def send_next_one(message):
         logger.debug("send_next_one CALL")
         
@@ -369,6 +383,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         send_products(message, 1)
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.next5.message)
+    @err_handler
     def send_next_five(message):
         logger.debug("send_next_five CALL")
         
@@ -381,6 +396,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         send_products(message, 5)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.stop.message)
+    @err_handler
     def stop_edit(message):
         logger.debug("stop_edit CALL")
         
@@ -405,6 +421,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         )
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.go_back_to_main_menu.message)
+    @err_handler
     def go_back_to_main_menu(message):
         logger.debug("go_back_to_main_menu CALL")
         
