@@ -9,7 +9,7 @@ from src.keyboards import (
     cart_keyboard,
     cart_control_edit_mode_keyboard,
     cart_edit_product_keyboard,
-    common_main_menu_keyboard
+    main_menu_keyboard
 )
 from src.states.cart_session import (
     get_cart_session, 
@@ -19,6 +19,7 @@ from src.states.cart_session import (
     delete_cart_session
 )
 from src.utils.wrappers import error_handler
+from src.utils.clean import delete_message
 
 def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
     
@@ -85,14 +86,6 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             show_alert = False
         bot.answer_callback_query(call.id, message, show_alert=show_alert)
         
-    def delete_message(chat_id: int, message_id: int):
-        logger.debug("delete_message CALL")
-        
-        try:
-            bot.delete_message(chat_id, message_id)
-        except Exception as e:
-            logger.warning(f"Failed to delete message: {e}")
-        
     def delete_all_edit_messages(chat_id: int, user_id: int):
         logger.debug("delete_all_edit_messages CALL")
         
@@ -102,10 +95,10 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             return 
         
         for message_id in session["article_number_to_message_id_map"].values():
-            delete_message(chat_id, message_id)
+            delete_message(bot, chat_id, message_id, logger)
                 
         for message_id in session["cart_control_edit_message_ids"]:
-            delete_message(chat_id, message_id)
+            delete_message(bot, chat_id, message_id, logger)
         
     def delete_all_messages(chat_id: int, user_id: int):
         logger.debug("delete_all_messages CALL")
@@ -115,8 +108,8 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
             return 
         
-        delete_message(chat_id, session["cart_text_message_id"])
-        delete_message(chat_id, session["cart_message_id"])
+        delete_message(bot, chat_id, session["cart_text_message_id"], logger)
+        delete_message(bot, chat_id, session["cart_message_id"], logger)
         delete_all_edit_messages(chat_id, user_id)
         
     @bot.callback_query_handler(func=lambda call: call.data == "clear_cart")
@@ -284,7 +277,12 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             session["index"] = max(0, session["total"] - 1)
         
         if article_number in session["article_number_to_message_id_map"]:
-            delete_message(chat_id, session["article_number_to_message_id_map"][article_number])
+            delete_message(
+                bot, 
+                chat_id, 
+                session["article_number_to_message_id_map"][article_number], 
+                logger
+            )
             del session["article_number_to_message_id_map"][article_number]
     
     @bot.callback_query_handler(func=lambda call: call.data.startswith('decrease_product_'))  
@@ -417,7 +415,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         bot.send_message(
             message.chat.id, 
             content_cfg.cart.main_menu.message,
-            reply_markup=common_main_menu_keyboard(content_cfg)
+            reply_markup=main_menu_keyboard(content_cfg)
         )
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.control_edit.go_back_to_main_menu.message)
@@ -438,5 +436,5 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         bot.send_message(
             message.chat.id, 
             content_cfg.cart.main_menu.message,
-            reply_markup=common_main_menu_keyboard(content_cfg)
+            reply_markup=main_menu_keyboard(content_cfg)
         )

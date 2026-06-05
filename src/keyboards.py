@@ -2,11 +2,13 @@ from telebot import types
 
 from src.config.content_config import ContentConfig
 
-def common_main_menu_keyboard(content_cfg: ContentConfig):
+def main_menu_keyboard(content_cfg: ContentConfig):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton(content_cfg.catalog.message),
         types.KeyboardButton(content_cfg.cart.message),
+        types.KeyboardButton(content_cfg.common.user.personal_data.message),
+        types.KeyboardButton(content_cfg.common.user.orders.message),
         types.KeyboardButton(content_cfg.common.admin.contacts.message),
         types.KeyboardButton(content_cfg.common.admin.about.message)
     ]
@@ -84,6 +86,17 @@ def cart_edit_product_keyboard(content_config: ContentConfig, article_number: in
         types.InlineKeyboardButton(quantity, callback_data="ignore"),
         types.InlineKeyboardButton(content_config.cart.edit.product.increase.message, callback_data=f"increase_product_{article_number}"),
         types.InlineKeyboardButton(content_config.cart.edit.product.delete.message, callback_data=f"delete_product_{article_number}")
+    ]
+    markup.add(*buttons)
+    return markup
+
+def common_user_profile_edit_keyboard(content_config: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_config.common.user.profile.edit.full_name.message, callback_data="edit_full_name"),
+        types.InlineKeyboardButton(content_config.common.user.profile.edit.phone.message, callback_data="edit_phone"),
+        types.InlineKeyboardButton(content_config.common.user.profile.edit.delivery_company.message, callback_data="edit_delivery_company"),
+        types.InlineKeyboardButton(content_config.common.user.profile.edit.delivery_point_address.message, callback_data="edit_delivery_point_address"),
     ]
     markup.add(*buttons)
     return markup

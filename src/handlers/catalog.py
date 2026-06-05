@@ -9,7 +9,7 @@ from src.config.content_config import ContentConfig
 from src.keyboards import (
     catalog_category_menu_keyboard,
     catalog_control_show_mode_keyboard, 
-    common_main_menu_keyboard, 
+    main_menu_keyboard, 
     catalog_product_keyboard
 )
 from src.states.catalog_session import set_session, delete_session, get_session
@@ -68,7 +68,7 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         bot.send_message(
             chat_id, 
             content_cfg.cart.main_menu.message, 
-            reply_markup=common_main_menu_keyboard(content_cfg)
+            reply_markup=main_menu_keyboard(content_cfg)
         )
         delete_session(user_id)
         
@@ -157,7 +157,7 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         bot.send_message(
             message.chat.id,
             content_cfg.cart.main_menu.message,
-            reply_markup=common_main_menu_keyboard(content_cfg)
+            reply_markup=main_menu_keyboard(content_cfg)
         )
         
         text = content_cfg.catalog.category_menu.header_text
@@ -178,5 +178,5 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         bot.send_message(
             message.chat.id,
             content_cfg.cart.main_menu.message,
-            reply_markup=common_main_menu_keyboard(content_cfg)
+            reply_markup=main_menu_keyboard(content_cfg)
         )

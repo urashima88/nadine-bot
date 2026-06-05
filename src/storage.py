@@ -220,6 +220,78 @@ class Storage:
                     RETURNING id
                 """, (new_quantity, tg_user_id, article_number, article_number, new_quantity, article_number))
                 return cur.fetchone() is not None
+            
+    def get_user_contact_info(self, tg_user_id: int) -> Tuple[str, str]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        u.full_name, 
+                        u.phone,
+                        d.company,
+                        d.address
+                    FROM users u
+                    LEFT JOIN delivery_points d
+                    ON u.id = d.user_id
+                    WHERE tg_user_id = %s
+                """, (tg_user_id,))
+                row = cur.fetchone()
+                if row:
+                    return (
+                        row.get('full_name') or '', 
+                        row.get('phone') or '', 
+                        row.get('company') or '', 
+                        row.get('address') or ''
+                    )
+                return '', '', '', ''
+            
+    def update_user_full_name(self, tg_user_id: int, full_name: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE users
+                    SET full_name = %s, updated_at = NOW()
+                    WHERE tg_user_id = %s
+                    RETURNING id
+                """, (full_name, tg_user_id))
+                return cur.fetchone() is not None
+            
+    def update_user_phone(self, tg_user_id: int, phone: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE users
+                    SET phone = %s, updated_at = NOW()
+                    WHERE tg_user_id = %s
+                    RETURNING id
+                """, (phone, tg_user_id))
+                return cur.fetchone() is not None
+            
+    def update_delivery_company(self, tg_user_id: int, company: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    INSERT INTO delivery_points (user_id, company, address)
+                    SELECT id, %s, ''
+                    FROM users WHERE tg_user_id = %s
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET company = EXCLUDED.company, updated_at = NOW()
+                    RETURNING id
+                """, (company, tg_user_id))
+                return cur.fetchone() is not None
+
+    def update_delivery_point_address(self, tg_user_id: int, address: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    INSERT INTO delivery_points (user_id, company, address)
+                    SELECT id, '', %s
+                    FROM users WHERE tg_user_id = %s
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET address = EXCLUDED.address, updated_at = NOW()
+                    RETURNING id
+                """, (address, tg_user_id))
+                return cur.fetchone() is not None
                 
     def close(self):
         self.pool.closeall()

@@ -164,6 +164,62 @@ class ContentConfig:
                 "message": "ℹ️ О Nadine"
             }
         },
+        "user": {
+            "personal_data": {
+                "message": "👤 Личные данные"
+            },
+            "orders": {
+                "message": "📦 Мои заказы"
+            },
+            "profile": {
+                "text": (
+                    "👤 *Личные данные*\n\n"
+                    "📛 *ФИО:* {full_name}\n"
+                    "📞 *Телефон:* {phone}\n"
+                    "🚚 *Служба доставки:* {delivery_company}\n"
+                    "📍 *Адрес пункта выдачи:* {delivery_point_address}" 
+                ),
+                "edit": {
+                    "full_name": {
+                        "message": "✏️ Изменить ФИО",
+                        "text": "Введите ФИО:",
+                        "update": {
+                            "message": "✅ ФИО было успешно обновлено."
+                        }
+                    },
+                    "phone": {
+                        "message": "✏️ Изменить телефон",
+                        "text": "Введите номер телефона:",
+                        "update": {
+                            "message": "✅ Номер телефона был успешно обновлён."
+                        }
+                    },
+                    "delivery_company": {
+                        "message": "✏️ Изменить службу доставки",
+                        "text": "Введите название службы доставки (например, Яндекс Доставка):",
+                        "update": {
+                            "message": "✅ Служба доставки была успешно обновлена."
+                        }
+                    },
+                    "delivery_point_address": {
+                        "message": "✏️ Изменить адрес пункта выдачи",
+                        "text": "Введите адрес пункта выдачи (например, г. Москва, Долгоруковская улица, 40):",
+                        "update": {
+                            "message": "✅ Адрес пункта выдачи был успешно обновлён."
+                        }
+                    },
+                    "empty_value": {
+                        "message": "❌ Значение не может быть пустым."
+                    },
+                    "wrong_phone_format": {
+                        "message": "❌ Неверный формат телефона. Введите номер например в таком формате +7.........."
+                    },
+                    "update_error": {
+                        "message": "❌ Ошибка обновления. Попробуйте позже."
+                    }
+                }
+            }
+        },
         "welcome": {
             "message": "Привет, {name}!\n\nВыбери действие из меню ниже:"
         },
@@ -266,6 +322,20 @@ class ContentConfig:
     
     def get_common_admin_contacts_text(cls, tg_username: str, phone: str):
         return cls.common.admin.contacts.text.format(tg_username=tg_username, phone=phone)
+    
+    def get_common_user_profile_text(
+        cls, 
+        full_name: str, 
+        phone: str,
+        delivery_company: str,
+        delivery_point_address
+    ):
+        return cls.common.user.profile.text.format(
+            full_name=full_name if full_name else "-",
+            phone=phone if phone else "-",
+            delivery_company=delivery_company if delivery_company else "-",
+            delivery_point_address=delivery_point_address if delivery_point_address else "-"
+        )
     
     # product
     
