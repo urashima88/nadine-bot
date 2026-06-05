@@ -1,10 +1,11 @@
 
 import telebot
 
-from src.handlers.catalog import register_catalog_handlers
-from src.handlers.cart import register_cart_handlers
-from src.handlers.common import register_common_handlers
-from src.handlers.product import register_product_handlers
+from src.handlers.user.catalog import register_catalog_handlers
+from src.handlers.user.cart import register_cart_handlers
+from src.handlers.user.common import register_common_handlers
+from src.handlers.user.product import register_product_handlers
+from src.handlers.user.order import register_order_handlers
 from src.logging.logger import setup_logger
 from src.storage import Storage
 from src.config.config import Config, load_config
@@ -40,6 +41,7 @@ def main():
     register_catalog_handlers(bot, db, cfg, content_cfg, logger)
     register_product_handlers(bot, db, cfg, content_cfg, logger)
     register_cart_handlers(bot, db, cfg, content_cfg, logger)
+    register_order_handlers(bot, db, cfg, content_cfg, logger)
     
     logger.info("Starting bot...")
     bot.polling(none_stop=True, interval=2, timeout=40)

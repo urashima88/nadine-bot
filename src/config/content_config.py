@@ -263,8 +263,18 @@ class ContentConfig:
     
     order: edict = edict({
         "place": {
-            "message": "💳 Оформить заказ"
-        }
+            "message": "💳 Оформить заказ",
+            "session_not_found": {
+                "message": "⚠️ Сессия не найдена. Начните новый заказ"
+            }
+        },
+        "limit_per_day": 3,
+        "exceed_limit": {
+            "message": "⚠️ Вы превысили лимит заказов (3 в день)."
+        },
+        "start": {
+            "message": "Начинаем оформление заказа. На сегодня заказов доступно: {remaining}"
+        },
     })
     
     db: edict = edict({
@@ -367,3 +377,8 @@ class ContentConfig:
             prod_limit=prod_limit,
             production_time_units=production_time_units
         )
+        
+    # order
+    
+    def get_order_start_message(cls, remaining: int):
+        return cls.order.start.message.format(remaining=remaining)

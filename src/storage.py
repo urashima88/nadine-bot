@@ -43,14 +43,12 @@ class Storage:
                 cur.execute("""
                     INSERT INTO users (tg_user_id, tg_username, tg_full_name)
                     VALUES (%s, %s, %s)
-                    ON CONFLICT (tg_user_id) DO NOTHING
-                    RETURNING id;            
+                    ON CONFLICT (tg_user_id) DO UPDATE
+                    SET tg_username = COALESCE(EXCLUDED.tg_username, users.tg_username),
+                        tg_full_name = COALESCE(EXCLUDED.tg_full_name, users.tg_full_name),
+                        updated_at = NOW()
+                    RETURNING id;
                 """, (tg_user_id, username, full_name))
-                row = cur.fetchone()
-                if row:
-                    return row['id']
-                
-                cur.execute("SELECT id FROM users WHERE tg_user_id = %s", (tg_user_id,))
                 row = cur.fetchone()
                 return row['id'] if row else None
             
@@ -228,11 +226,10 @@ class Storage:
                     SELECT 
                         u.full_name, 
                         u.phone,
-                        d.company,
-                        d.address
+                        COALESCE(d.company, '') AS company,
+                        COALESCE(d.address, '') AS address
                     FROM users u
-                    LEFT JOIN delivery_points d
-                    ON u.id = d.user_id
+                    LEFT JOIN delivery_points d ON u.id = d.user_id
                     WHERE tg_user_id = %s
                 """, (tg_user_id,))
                 row = cur.fetchone()
@@ -243,7 +240,7 @@ class Storage:
                         row.get('company') or '', 
                         row.get('address') or ''
                     )
-                return '', '', '', ''
+                return ('', '', '', '')
             
     def update_user_full_name(self, tg_user_id: int, full_name: str) -> bool:
         with self._get_connection() as conn:
@@ -292,6 +289,23 @@ class Storage:
                     RETURNING id
                 """, (address, tg_user_id))
                 return cur.fetchone() is not None
+            
+    def get_user_today_orders_count(self, tg_user_id: int) -> int:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT COUNT(*) AS cnt
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE u.tg_user_id = %s
+                        AND o.status NOT IN ('отменён', 'ошибка')
+                        AND o.created_at >= DATE_TRUNC('day', NOW())
+                """, (tg_user_id,))
+                return cur.fetchone()['cnt']
+            
+    def can_user_create_order(self, tg_user_id: int, max_orders_per_day: int = 5) -> bool:
+        today_orders = self.get_user_today_orders_count(tg_user_id)
+        return today_orders < max_orders_per_day
                 
     def close(self):
         self.pool.closeall()

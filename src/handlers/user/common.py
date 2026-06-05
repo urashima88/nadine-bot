@@ -12,6 +12,7 @@ from src.keyboards import (
 )
 from src.utils.wrappers import error_handler
 from src.utils.clean import delete_message
+from src.utils.profile import check_and_update_user_profile_field
 
 def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
     err_handler = error_handler(bot, content_cfg, logger)
@@ -61,26 +62,18 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
             parse_mode="Markdown"
         )
         
-    def show_profile(chat_id: int, user_id: int, message_id: int = None):
+    def show_profile(chat_id: int, user_id: int):
         logger.debug("show_profile CALL")
         
         full_name, phone, delivery_company, delivery_point_address = db.get_user_contact_info(user_id)
         profile_text = content_cfg.get_common_user_profile_text(full_name, phone, delivery_company, delivery_point_address)    
         
-        if message_id:
-            bot.send_message(
-                chat_id, 
-                profile_text, 
-                parse_mode="Markdown", 
-                reply_markup=common_user_profile_edit_keyboard(content_cfg)
-            )
-        else:
-            bot.send_message(
-                chat_id,
-                profile_text,
-                parse_mode="Markdown",
-                reply_markup=common_user_profile_edit_keyboard(content_cfg)
-            )
+        bot.send_message(
+            chat_id, 
+            profile_text, 
+            parse_mode="Markdown", 
+            reply_markup=common_user_profile_edit_keyboard(content_cfg)
+        )
 
     @bot.message_handler(func=lambda message: message.text == content_cfg.common.user.personal_data.message)
     @err_handler
@@ -104,47 +97,30 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
             prompt = content_cfg.common.user.profile.edit.delivery_company.text
         else:
             prompt = content_cfg.common.user.profile.edit.delivery_point_address.text
-        msg = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
-            msg,
-            save_profile_field,
+            message,
+            save_user_profile_field,
             call.from_user.id,
-            call_data,
-            call.message.message_id
+            call_data
         )
             
-    def save_profile_field(message, tg_user_id: int, call_data: str, profile_message_id: int):
-        logger.debug("save_profile_field CALL")
+    def save_user_profile_field(message, tg_user_id: int, call_data: str):
+        logger.debug("save_user_profile_field CALL (common)")
         
-        new_value = message.text.strip()
-        if not new_value:
-            bot.send_message(message.chat.id, content_cfg.common.user.profile.edit.empty_value.message)
-            return
-        
-        if call_data == "edit_phone" and not re.match(r"^\+?[0-9\s\-\(\)]{10,20}$", new_value):
-            bot.send_message(
-                message.chat.id,
-                content_cfg.common.user.profile.edit.wrong_phone_format.message
-            )
-            return
-            
-        if call_data == "edit_full_name":
-            success = db.update_user_full_name(tg_user_id, new_value)
-            success_message = content_cfg.common.user.profile.edit.full_name.update.message
-        elif call_data == "edit_phone":
-            success = db.update_user_phone(tg_user_id, new_value)
-            success_message = content_cfg.common.user.profile.edit.phone.update.message
-        elif call_data == "edit_delivery_company":
-            success = db.update_delivery_company(tg_user_id, new_value)
-            success_message = content_cfg.common.user.profile.edit.delivery_company.update.message
-        else:
-            success = db.update_delivery_point_address(tg_user_id, new_value)
-            success_message = content_cfg.common.user.profile.edit.delivery_point_address.update.message
+        success, success_message = check_and_update_user_profile_field(
+            message, 
+            bot, 
+            db, 
+            tg_user_id, 
+            call_data,
+            content_cfg
+        )
             
         if success:
             bot.send_message(message.chat.id, success_message)
             delete_message(bot, message.chat.id, message.message_id, logger)
-            show_profile(message.chat.id, tg_user_id, profile_message_id)
+            show_profile(message.chat.id, tg_user_id)
         else:
             bot.send_message(message.chat.id, content_cfg.common.user.profile.edit.update_error.message)
         

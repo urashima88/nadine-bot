@@ -63,7 +63,7 @@ def cart_keyboard(content_cfg: ContentConfig):
     buttons = [
         types.InlineKeyboardButton(content_cfg.cart.edit.message, callback_data='edit_cart'),
         types.InlineKeyboardButton(content_cfg.cart.clear.message, callback_data='clear_cart'),
-        types.InlineKeyboardButton(content_cfg.order.place.message, callback_data='checkout'),
+        types.InlineKeyboardButton(content_cfg.order.place.message, callback_data='place_order'),
     ]
     markup.add(*buttons)
     return markup
