@@ -199,6 +199,12 @@ class ContentConfig:
                         "text": "Введите название службы доставки (например, Яндекс Доставка):",
                         "update": {
                             "message": "✅ Служба доставки была успешно обновлена."
+                        },
+                        "question": {
+                            "message": (
+                                "У вас уже указана служба доставки: {delivery_company}\n"
+                                "Вы хотели бы изменить её?"
+                            ),
                         }
                     },
                     "delivery_point_address": {
@@ -206,7 +212,19 @@ class ContentConfig:
                         "text": "Введите адрес пункта выдачи (например, г. Москва, Долгоруковская улица, 40):",
                         "update": {
                             "message": "✅ Адрес пункта выдачи был успешно обновлён."
+                        },
+                        "question": {
+                            "message": (
+                                "У вас уже указан адрес пункта выдачи: {delivery_point_address}\n"
+                                "Вы хотели бы изменить его?"
+                            ),
                         }
+                    },
+                    "yes": {
+                        "message": "Да"
+                    },
+                    "no": {
+                        "message": "Нет"
                     },
                     "empty_value": {
                         "message": "❌ Значение не может быть пустым."
@@ -275,6 +293,9 @@ class ContentConfig:
         "start": {
             "message": "Начинаем оформление заказа. На сегодня заказов доступно: {remaining}"
         },
+        "session_not_found": {
+            "message": "⚠️ Сессия не найдена. Начните заново из каталога"
+        }
     })
     
     db: edict = edict({
@@ -306,14 +327,17 @@ class ContentConfig:
     def get_cart_total_text(cls, total: float):
         return cls.cart.total.text.format(total=round(total, 2))
     
+    @classmethod
     def get_cart_product_added_message(cls, quantity: int):
         return cls.cart.product.added.message.format(quantity=quantity)
     
+    @classmethod
     def get_cart_edit_product_quantity_message(cls, quantity: int):
         return cls.cart.edit.product.quantity.message.format(quantity=quantity)
     
     # catalog
     
+    @classmethod
     def get_catalog_control_show_text(
         cls,
         category: str,
@@ -330,9 +354,11 @@ class ContentConfig:
     def get_common_welcome_message(cls, name: str) -> str:
         return cls.common.welcome.message.format(name=name)
     
+    @classmethod
     def get_common_admin_contacts_text(cls, tg_username: str, phone: str):
         return cls.common.admin.contacts.text.format(tg_username=tg_username, phone=phone)
     
+    @classmethod
     def get_common_user_profile_text(
         cls, 
         full_name: str, 
@@ -346,6 +372,14 @@ class ContentConfig:
             delivery_company=delivery_company if delivery_company else "-",
             delivery_point_address=delivery_point_address if delivery_point_address else "-"
         )
+    
+    @classmethod 
+    def get_common_user_profile_edit_delivery_company_question_message(cls, delivery_company: str):
+        return cls.common.user.profile.edit.delivery_company.question.message.format(delivery_company=delivery_company)
+    
+    @classmethod
+    def get_common_user_profile_edit_delivery_point_address_question_message(cls, delivery_point_address: str):
+        return cls.common.user.profile.edit.delivery_point_address.question.message.format(delivery_point_address=delivery_point_address)
     
     # product
     
@@ -380,5 +414,6 @@ class ContentConfig:
         
     # order
     
+    @classmethod
     def get_order_start_message(cls, remaining: int):
         return cls.order.start.message.format(remaining=remaining)

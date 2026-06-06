@@ -100,3 +100,12 @@ def common_user_profile_edit_keyboard(content_config: ContentConfig):
     ]
     markup.add(*buttons)
     return markup
+
+def order_user_profile_field_keyboard(content_config: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    buttons = [
+        types.InlineKeyboardButton(content_config.common.user.profile.edit.yes.message, callback_data="edit_field_yes"),
+        types.InlineKeyboardButton(content_config.common.user.profile.edit.no.message, callback_data="edit_field_no")
+    ]
+    markup.add(*buttons)
+    return markup
