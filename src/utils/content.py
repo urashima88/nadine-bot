@@ -1,4 +1,5 @@
 from psycopg2.extras import NumericRange
+import re
 
 UNIT_EXCEPTIONS_OTHER = {"11", "12", "13", "14"}
 UNIT_EXCEPTIONS_234 = {"2", "3", "4"}
@@ -17,3 +18,17 @@ def get_production_time_days_ru_format(
     elif upper_last_digits[-1] == 1:
         return unit_1
     return unit_other
+
+def str_to_numeric_range(range_str: str) -> NumericRange | None:
+    if not range_str or range_str == 'empty':
+        return None
+    match = re.match(r'([\[\(])(\d+),(\d+)([\])])', range_str)
+    if not match:
+        return None
+    left_bound, lower_str, upper_str, right_bound = match.groups()
+    lower = int(lower_str)
+    upper = int(upper_str)
+    lower_inc = (left_bound == '[')
+    upper_inc = (right_bound == ']')
+    bounds = f"{'[' if lower_inc else '('}{']' if upper_inc else ')'}"
+    return NumericRange(lower, upper, bounds=bounds)

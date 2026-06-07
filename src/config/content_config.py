@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import List
 
 from psycopg2.extras import NumericRange
 from easydict import EasyDict as edict
@@ -13,7 +13,7 @@ class ContentConfig:
             "text": (
                 "• *{name}*\n"
                 "  Nd\\_{article_number:05d}\n"
-                "  Цена: {price} ₽ x {quantity} = {item_total} ₽\n\n"
+                "  Цена: {price} ₽ x {quantity} = {product_total} ₽\n\n"
             ),
             "added": {
                 "message": "✅ Товар добавлен в корзину! Теперь в корзине: {quantity} шт."
@@ -117,7 +117,7 @@ class ContentConfig:
         "control_show": {
             "text": (
                 "{category_text}\n"
-                "Всего товаров: {number_products}\n"
+                "Всего видов товаров: {number_products}\n"
                 "Используйте кнопки внизу для навигации."
             ),
             "next": {"message": "➡️ Следующий товар"},
@@ -175,10 +175,16 @@ class ContentConfig:
                 "text": (
                     "👤 *Личные данные*\n\n"
                     "📛 *ФИО:* {full_name}\n"
-                    "📞 *Телефон:* {phone}\n"
+                    "📱 *Телефон:* {phone}\n"
                     "🚚 *Служба доставки:* {delivery_company}\n"
                     "📍 *Адрес пункта выдачи:* {delivery_point_address}" 
                 ),
+                "eng2ru_field_map": {
+                    "full_name": "ФИО",
+                    "phone": "Телефон",
+                    "delivery_company": "Служба доставки",
+                    "delivery_point_address": "Адрес пункта выдачи"
+                },
                 "edit": {
                     "full_name": {
                         "message": "✏️ Изменить ФИО",
@@ -239,7 +245,7 @@ class ContentConfig:
             }
         },
         "welcome": {
-            "message": "Привет, {name}!\n\nВыбери действие из меню ниже:"
+            "message": "Привет, {full_name}!\n\nВыбери действие из меню ниже:"
         },
         "error": {
             "message": "⚠️ Непредвиденная ошибка. Повторите позже."
@@ -282,11 +288,24 @@ class ContentConfig:
     order: edict = edict({
         "place": {
             "message": "💳 Оформить заказ",
-            "session_not_found": {
-                "message": "⚠️ Сессия не найдена. Начните новый заказ"
+            "final": {
+                "header_text": "📦 *Ваш заказ:*\n\n",
+                "message": "💳 Оформить"
+            },
+            "empty_fields": {
+                "message": (
+                    "У вас не заполнены обязательные поля: {fields_string}.\n"
+                    "Пожалуйста начните оформление заказа заново."
+                )
+            },
+            "error": {
+                "message": "❌ Ошибка при создании заказа. Попробуйте позже."
+            },
+            "transfer_to_admin": {
+                "message": "✅ Заказ оформлен и передан Nadine. Ожидайте подтверждения."
             }
         },
-        "limit_per_day": 3,
+        "limit_per_day": 50,
         "exceed_limit": {
             "message": "⚠️ Вы превысили лимит заказов (3 в день)."
         },
@@ -294,7 +313,71 @@ class ContentConfig:
             "message": "Начинаем оформление заказа. На сегодня заказов доступно: {remaining}"
         },
         "session_not_found": {
-            "message": "⚠️ Сессия не найдена. Начните заново из каталога"
+            "message": "⚠️ Сессия не найдена. Начните заново оформлять заказ"
+        },
+        "admin": {
+            "product": {
+                "details": {
+                    "long": {
+                        "text": (
+                            "🔖 *{name}*\n"
+                            "✨ *Nd_{article_number:05d}*\n"
+                            "💰 *Цена:* {price} ₽ x {quantity} = {product_total} ₽\n"
+                            "⛓️ *Материалы:* {materials}\n"
+                            "🏷️ *Категория:* {category}\n"
+                            "🕒 *Время изготовления:* {production_time} {production_time_units}\n"
+                        )
+                    },
+                    "short": {
+                        "text": (
+                            "🔖 *{name}*\n"
+                            "✨ *Nd_{article_number:05d}*\n"
+                            "💰 *Цена:* {price} ₽ x {quantity} = {product_total} ₽\n"
+                        )
+                    }
+                }
+            },
+            "new": {
+                "text": (
+                    "🆕 *НОВЫЙ ЗАКАЗ №{order_id}*\n\n"
+                    "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
+                    "📛 *Имя в Telegram:* {tg_full_name}\n"
+                    "👤 *ФИО:* {full_name}\n"
+                    "📱 *Телефон*: [{phone}](tel:{phone})\n"
+                    "🚚 *Служба доставки:* {delivery_company}\n"
+                    "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                    "📦 *Состав заказа:*\n\n{products_text}\n"
+                    "{delivery_price_text}"
+                    "💰 *Общая сумма: {total_price} ₽*"
+                ),
+                "delivery_price": {
+                    "text": "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
+                },
+                "set_delivery_price": {
+                    "message": "💰 Ввести стоимость доставки",
+                    "text": "Введите стоимость доставки:",
+                    "incorrect_value": {
+                        "message": "❌ Заданное значение некорректно."
+                    },
+                    "success": {
+                        "message": "✅ Стоимость доставки была успешно обновлена."
+                    },
+                    "error": {
+                        "message": "❌ Ошибка при установке стоимости доставки. Попробуйте позже."
+                    }
+                },
+                "cancel": {
+                    "message": "❌ Отменить заказ"
+                },
+                "send": {
+                    "for_payment": {
+                        "message": "💳 Отправить на оплату"
+                    },
+                    "receipt": {
+                        "message": "🧾 Отправить чек"
+                    }
+                }
+            }
         }
     })
     
@@ -313,14 +396,14 @@ class ContentConfig:
         article_number: int,
         price: float,
         quantity: int,
-        item_total: float
+        product_total: float
     ):
         return cls.cart.product.text.format(
             name=name.capitalize(),
             article_number=article_number,
             price=round(float(price), 2),
             quantity=quantity,
-            item_total=round(item_total, 2)
+            product_total=round(product_total, 2)
         )
     
     @classmethod
@@ -351,8 +434,8 @@ class ContentConfig:
     # common
     
     @classmethod
-    def get_common_welcome_message(cls, name: str) -> str:
-        return cls.common.welcome.message.format(name=name)
+    def get_common_welcome_message(cls, full_name: str) -> str:
+        return cls.common.welcome.message.format(full_name=full_name)
     
     @classmethod
     def get_common_admin_contacts_text(cls, tg_username: str, phone: str):
@@ -417,3 +500,84 @@ class ContentConfig:
     @classmethod
     def get_order_start_message(cls, remaining: int):
         return cls.order.start.message.format(remaining=remaining)
+
+    @classmethod
+    def get_order_place_empty_fields_message(cls, fields: List[str]):
+        translated_fields = []
+        for field in fields:
+            translated_field = cls.common.user.profile.eng2ru_field_map.get(field)
+            translated_fields.append(translated_field)
+        fields_string = ", ".join(translated_fields)
+        return cls.order.place.empty_fields.message.format(fields_string=fields_string)
+    
+    @classmethod
+    def get_order_admin_product_details_long_text(
+        cls,
+        name: str,
+        article_number: int,
+        price: float,
+        quantity: int,
+        product_total: float,
+        category: str,
+        materials: str,
+        production_time: NumericRange,
+        production_time_units: str
+    ):
+        return cls.order.admin.product.details.long.text.format(
+            name=name.capitalize(),
+            article_number=article_number,
+            price=round(float(price), 2),
+            quantity=quantity,
+            product_total=round(float(product_total), 2),
+            materials=materials,
+            category=category,
+            production_time=f"{production_time.lower}-{production_time.upper}",
+            production_time_units=production_time_units
+        )
+        
+    @classmethod
+    def get_order_admin_product_details_short_text(
+        cls,
+        name: str,
+        article_number: int,
+        price: float,
+        quantity: int,
+        product_total: float,
+    ):
+        return cls.order.admin.product.details.short.text.format(
+            name=name.capitalize(),
+            article_number=article_number,
+            price=round(float(price), 2),
+            quantity=quantity,
+            product_total=round(float(product_total), 2),
+        )
+        
+    @classmethod
+    def get_order_admin_new_text(
+        cls,
+        order_id: str,
+        tg_username: str,
+        tg_full_name: str,
+        full_name: str,
+        phone: str,
+        delivery_company: str,
+        delivery_point_address: str,
+        products_text: str,
+        total_price: float,
+        delivery_price: float = None
+    ):
+        delivery_price_text = ""
+        if delivery_price is not None:
+            delivery_price_text = cls.order.admin.new.delivery_price.text.format(delivery_price=round(float(delivery_price), 2))
+        return cls.order.admin.new.text.format(
+            order_id=order_id,
+            tg_username=tg_username,
+            tg_full_name=tg_full_name,
+            full_name=full_name,
+            phone=phone,
+            delivery_company=delivery_company,
+            delivery_point_address=delivery_point_address,
+            products_text=products_text,
+            total_price=round(float(total_price), 2),
+            delivery_price_text=delivery_price_text
+        )

@@ -63,7 +63,7 @@ def cart_keyboard(content_cfg: ContentConfig):
     buttons = [
         types.InlineKeyboardButton(content_cfg.cart.edit.message, callback_data='edit_cart'),
         types.InlineKeyboardButton(content_cfg.cart.clear.message, callback_data='clear_cart'),
-        types.InlineKeyboardButton(content_cfg.order.place.message, callback_data='place_order'),
+        types.InlineKeyboardButton(content_cfg.order.place.message, callback_data='start_order'),
     ]
     markup.add(*buttons)
     return markup
@@ -106,6 +106,32 @@ def order_user_profile_field_keyboard(content_config: ContentConfig):
     buttons = [
         types.InlineKeyboardButton(content_config.common.user.profile.edit.yes.message, callback_data="edit_field_yes"),
         types.InlineKeyboardButton(content_config.common.user.profile.edit.no.message, callback_data="edit_field_no")
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_final_summary_keyboard(content_config: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_config.order.place.final.message, callback_data="place_order")
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_set_delivery_price_keyboard(content_config: ContentConfig, order_id: str):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    buttons = [
+        types.InlineKeyboardButton(content_config.order.admin.new.set_delivery_price.message, callback_data=f"set_delivery_price_{order_id}"),
+        types.InlineKeyboardButton(content_config.order.admin.new.cancel.message, callback_data=f"cancel_order_{order_id}")
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_send_keyboard(content_config: ContentConfig, order_id: str):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    buttons = [
+        types.InlineKeyboardButton(content_config.order.admin.new.send.for_payment.message, callback_data=f"send_for_payment_{order_id}"),
+        types.InlineKeyboardButton(content_config.order.admin.new.send.receipt.message, callback_data=f"send_receipt_{order_id}")
     ]
     markup.add(*buttons)
     return markup

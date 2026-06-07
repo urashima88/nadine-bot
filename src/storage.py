@@ -37,18 +37,18 @@ class Storage:
         with conn.cursor(cursor_factory=extras.RealDictCursor) as cur:
             yield cur
             
-    def register_user(self, tg_user_id: int, username: str = None, full_name: str = None) -> Optional[str]:
+    def register_user(self, tg_user_id: int, tg_username: str = None, tg_full_name: str = None) -> Optional[str]:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
                     INSERT INTO users (tg_user_id, tg_username, tg_full_name)
-                    VALUES (%s, %s, %s)
+                    VALUES (%s, %s, %s, %s)
                     ON CONFLICT (tg_user_id) DO UPDATE
                     SET tg_username = COALESCE(EXCLUDED.tg_username, users.tg_username),
                         tg_full_name = COALESCE(EXCLUDED.tg_full_name, users.tg_full_name),
                         updated_at = NOW()
                     RETURNING id;
-                """, (tg_user_id, username, full_name))
+                """, (tg_user_id, tg_username, tg_full_name))
                 row = cur.fetchone()
                 return row['id'] if row else None
             
@@ -219,7 +219,7 @@ class Storage:
                 """, (new_quantity, tg_user_id, article_number, article_number, new_quantity, article_number))
                 return cur.fetchone() is not None
             
-    def get_user_contact_info(self, tg_user_id: int) -> Tuple[str, str]:
+    def get_user_profile_data(self, tg_user_id: int) -> Tuple[str]:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
@@ -306,7 +306,143 @@ class Storage:
     def can_user_create_order(self, tg_user_id: int, max_orders_per_day: int = 5) -> bool:
         today_orders = self.get_user_today_orders_count(tg_user_id)
         return today_orders < max_orders_per_day
-                
+    
+    def get_user_tg_data(self, tg_user_id: int) -> str:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT
+                        tg_username,
+                        tg_full_name
+                    FROM users
+                    WHERE tg_user_id = %s
+                """, (tg_user_id,))
+                row = cur.fetchone()
+                if row:
+                    return (
+                        row.get('tg_username') or '', 
+                        row.get('tg_full_name') or '', 
+                    )
+                return ('', '')
+    
+    def create_order(
+        self, 
+        tg_user_id: int, 
+        total_price: float,
+        delivery_company: str, 
+        delivery_point_address: str
+    ) -> Optional[str]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    WITH 
+                    cur_user AS (
+                        SELECT id FROM users WHERE tg_user_id = %s
+                    ),
+                    inserted_order AS (
+                        INSERT INTO orders (user_id, delivery_company_snapshot, delivery_address_snapshot,
+                                            order_price, status, created_at, updated_at)
+                        SELECT id, %s, %s, %s, 'на рассмотрении', NOW(), NOW()
+                        FROM cur_user
+                        RETURNING id
+                    ),
+                    moved_products AS (
+                        INSERT INTO order_products (order_id, product_id, quantity, price_at_order)
+                        SELECT (SELECT id FROM inserted_order),
+                            p.id,
+                            c.quantity,
+                            p.price
+                        FROM cart c
+                        JOIN products p ON c.product_id = p.id
+                        JOIN cur_user u ON c.user_id = u.id
+                    ),
+                    deleted_cart AS (
+                        DELETE FROM cart
+                        USING cur_user
+                        WHERE cart.user_id = cur_user.id
+                    )
+                    SELECT id FROM inserted_order;
+                """, (tg_user_id, delivery_company, delivery_point_address, total_price))
+                row = cur.fetchone()
+                return row['id'] if row else None
+            
+    def is_admin(self, tg_user_id: int) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("SELECT is_admin FROM users WHERE tg_user_id = %s", (tg_user_id,))
+                row = cur.fetchone()
+                return row['is_admin'] if row else False
+
+    def get_admin_user_id(self) -> Optional[int]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT tg_user_id
+                    FROM users
+                    WHERE is_admin = true
+                    LIMIT 1
+                """)
+                row = cur.fetchone()
+                return row['tg_user_id'] if row else None  
+
+    def set_delivery_price(self, order_id: str, delivery_price: float) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE orders
+                    SET delivery_price = %s
+                    WHERE id = %s::uuid
+                    RETURNING id
+                """, (delivery_price, order_id))
+                row = cur.fetchone()
+                return row is not None   
+            
+    def get_order(self, order_id: str) -> Optional[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        o.id AS order_id,
+                        u.tg_username,
+                        u.tg_full_name,
+                        u.full_name,
+                        u.phone,
+                        COALESCE(d.company, '') AS delivery_company,
+                        COALESCE(d.address, '') AS delivery_point_address,
+                        o.order_price,
+                        o.delivery_price,
+                        o.status,
+                        o.created_at,
+                        COALESCE(
+                            (SELECT json_agg(
+                                json_build_object(
+                                    'name', p.name,
+                                    'article_number', p.article_number,
+                                    'quantity', op.quantity,
+                                    'price_at_order', op.price_at_order,
+                                    'category', p.category,
+                                    'materials', COALESCE(
+                                        (SELECT string_agg(m.name, ', ') 
+                                        FROM product_materials pm 
+                                        JOIN materials m ON pm.material_id = m.id 
+                                        WHERE pm.product_id = p.id), ''),
+                                    'production_time', p.production_time
+                                )
+                            )
+                            FROM order_products op
+                            JOIN products p ON op.product_id = p.id
+                            WHERE op.order_id = o.id
+                        ), '[]'::json) AS products
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    LEFT JOIN delivery_points d ON u.id = d.user_id
+                    WHERE o.id = %s::uuid
+                """, (order_id,))
+                row = cur.fetchone()
+                if row:
+                    return dict(row)
+                return None
+    
     def close(self):
         self.pool.closeall()
         self.logger.info("PostgreSQL connection pool closed")

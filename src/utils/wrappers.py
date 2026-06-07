@@ -5,6 +5,7 @@ import psycopg2
 from telebot import TeleBot
 
 from src.config.content_config import ContentConfig
+from src.storage import Storage
 
 def error_handler(bot: TeleBot, content_cfg: ContentConfig, logger: Logger):
     def decorator(func):
@@ -16,7 +17,7 @@ def error_handler(bot: TeleBot, content_cfg: ContentConfig, logger: Logger):
                 logger.exception(f"Database error in {func.__name__}: {e}")
                 _send_error_message(
                     bot, 
-                    handler_args, \
+                    handler_args,
                     content_cfg.db.error.message, 
                     logger
                 )
@@ -41,3 +42,22 @@ def _send_error_message(bot: TeleBot, handler_args, text: str, logger: Logger):
     else:
         logger.error(f"Unknown handler arguments type: {type(handler_args)}")
             
+def is_admin(bot: TeleBot, db: Storage, is_for_admin: bool = False):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(handler_args):
+            if hasattr(handler_args, "from_user"):
+                user_id = handler_args.from_user.id
+            else:
+                return func(handler_args)
+
+            is_admin_flag = db.is_admin(user_id)
+
+            if is_admin_flag == is_for_admin:
+                return func(handler_args)
+            else:
+                if hasattr(handler_args, "id"):
+                    bot.answer_callback_query(handler_args.id)
+                return
+        return wrapper
+    return decorator

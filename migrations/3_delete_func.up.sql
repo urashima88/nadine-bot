@@ -1,0 +1,3 @@
+DROP FUNCTION IF EXISTS can_user_order(UUID, INTEGER);
+
+ALTER TABLE orders DROP COLUMN IF EXISTS delivery_point_id;

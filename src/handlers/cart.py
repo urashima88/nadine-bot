@@ -20,6 +20,7 @@ from src.states.cart_session import (
 )
 from src.utils.wrappers import error_handler
 from src.utils.clean import delete_message
+from src.handlers.shared import get_cart_content
 
 def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
     
@@ -28,31 +29,20 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
     @bot.message_handler(func=lambda message: message.text == content_cfg.cart.message)
     @err_handler
     def show_cart(message): 
-        logger.debug("show_cart CALL")
-               
-        user_id = message.from_user.id
-        cart_products = db.get_cart_products(user_id)
+        logger.debug("show_cart CALL")    
+
+        header_text = content_cfg.cart.user.header_text
+        cart_text = get_cart_content(
+            message.from_user.id, 
+            db, 
+            content_cfg, 
+            logger,
+            header_text
+        )
         
-        if not cart_products:
+        if not cart_text:
             bot.send_message(message.chat.id, content_cfg.cart.is_empty.message)
             return
-        
-        total = 0
-        cart_text = content_cfg.cart.user.header_text
-        
-        for product in cart_products:
-            article_number = product["article_number"]
-            name = product["name"]
-            price = product["price"]
-            quantity = product["quantity"]
-            
-            product_total = price * quantity
-            total += product_total
-            cart_text += content_cfg.get_cart_product_text(
-                name, article_number, price, quantity, product_total
-            )
-            
-        cart_text += content_cfg.get_cart_total_text(total)
         
         sent = bot.send_message(
             message.chat.id,
@@ -61,7 +51,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             parse_mode="Markdown"
         )
         
-        set_cart_session(user_id, cart_text_message_id=message.id, cart_message_id=sent.message_id)
+        set_cart_session(message.from_user.id, cart_text_message_id=message.id, cart_message_id=sent.message_id)
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('add_'))
     @err_handler

@@ -22,13 +22,12 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
     def start(message):
         logger.debug("start CALL")
         
-        user_id = message.from_user.id
-        username = message.from_user.username
-        full_name = message.from_user.full_name
-        db.register_user(user_id, username, full_name)
+        tg_user_id = message.from_user.id
+        tg_username = message.from_user.username
+        tg_full_name = message.from_user.full_name
+        db.register_user(tg_user_id, tg_username, tg_full_name)
         
-        welcome_text = content_cfg.get_common_welcome_message(full_name)
-        
+        welcome_text = content_cfg.get_common_welcome_message(tg_full_name)
         bot.send_message(
             message.chat.id, 
             welcome_text, 
@@ -65,7 +64,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
     def show_profile(chat_id: int, user_id: int):
         logger.debug("show_profile CALL")
         
-        full_name, phone, delivery_company, delivery_point_address = db.get_user_contact_info(user_id)
+        full_name, phone, delivery_company, delivery_point_address = db.get_user_profile_data(user_id)
         profile_text = content_cfg.get_common_user_profile_text(full_name, phone, delivery_company, delivery_point_address)    
         
         bot.send_message(
