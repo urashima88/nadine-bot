@@ -122,7 +122,7 @@ def order_set_delivery_price_keyboard(content_config: ContentConfig, order_id: s
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
         types.InlineKeyboardButton(content_config.order.admin.new.set_delivery_price.message, callback_data=f"set_delivery_price_{order_id}"),
-        types.InlineKeyboardButton(content_config.order.admin.new.cancel.message, callback_data=f"cancel_order_{order_id}")
+        types.InlineKeyboardButton(content_config.order.admin.new.cancel.message, callback_data=f"admin_cancel_order_{order_id}")
     ]
     markup.add(*buttons)
     return markup
@@ -131,7 +131,16 @@ def order_send_keyboard(content_config: ContentConfig, order_id: str):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
         types.InlineKeyboardButton(content_config.order.admin.new.send.for_payment.message, callback_data=f"send_for_payment_{order_id}"),
-        types.InlineKeyboardButton(content_config.order.admin.new.send.receipt.message, callback_data=f"send_receipt_{order_id}")
+        types.InlineKeyboardButton(content_config.order.admin.new.send.receipt.message, callback_data=f"send_receipt_{order_id}"),
+        types.InlineKeyboardButton(content_config.order.admin.new.cancel.message, callback_data=f"admin_cancel_order_{order_id}")
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_user_cancel_keyboard(content_config: ContentConfig, order_id: str):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_config.order.user.cancel.message, callback_data=f"user_cancel_order_{order_id}")
     ]
     markup.add(*buttons)
     return markup

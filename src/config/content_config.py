@@ -13,14 +13,14 @@ class ContentConfig:
             "text": (
                 "• *{name}*\n"
                 "  Nd\\_{article_number:05d}\n"
-                "  Цена: {price} ₽ x {quantity} = {product_total} ₽\n\n"
+                "  Цена: {price} ₽ x {quantity} = {product_total} ₽"
             ),
             "added": {
                 "message": "✅ Товар добавлен в корзину! Теперь в корзине: {quantity} шт."
             },
         },
         "total": {
-            "text": "💰 *Итого: {total} ₽*"
+            "text": "\n\n💰 *Итого: {total} ₽*"
         },
         "message": "🛒 Корзина",
         "edit": {
@@ -302,7 +302,7 @@ class ContentConfig:
                 "message": "❌ Ошибка при создании заказа. Попробуйте позже."
             },
             "transfer_to_admin": {
-                "message": "✅ Заказ оформлен и передан Nadine. Ожидайте подтверждения."
+                "message": "✅ Заказ №{order_number} оформлен и передан Nadine. Ожидайте подтверждения."
             }
         },
         "limit_per_day": 50,
@@ -318,28 +318,19 @@ class ContentConfig:
         "admin": {
             "product": {
                 "details": {
-                    "long": {
-                        "text": (
-                            "🔖 *{name}*\n"
-                            "✨ *Nd_{article_number:05d}*\n"
-                            "💰 *Цена:* {price} ₽ x {quantity} = {product_total} ₽\n"
-                            "⛓️ *Материалы:* {materials}\n"
-                            "🏷️ *Категория:* {category}\n"
-                            "🕒 *Время изготовления:* {production_time} {production_time_units}\n"
-                        )
-                    },
-                    "short": {
-                        "text": (
-                            "🔖 *{name}*\n"
-                            "✨ *Nd_{article_number:05d}*\n"
-                            "💰 *Цена:* {price} ₽ x {quantity} = {product_total} ₽\n"
-                        )
-                    }
+                    "text": (
+                        "🔖 *{name}*\n"
+                        "✨ *Nd_{article_number:05d}*\n"
+                        "💰 *Цена:* {price} ₽ x {quantity} = {product_total} ₽\n"
+                        "⛓️ *Материалы:* {materials}\n"
+                        "🏷️ *Категория:* {category}\n"
+                        "🕒 *Время изготовления:* {production_time} {production_time_units}"
+                    )
                 }
             },
             "new": {
                 "text": (
-                    "🆕 *НОВЫЙ ЗАКАЗ №{order_id}*\n\n"
+                    "🆕 *НОВЫЙ ЗАКАЗ №{order_number}*\n\n"
                     "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
                     "📛 *Имя в Telegram:* {tg_full_name}\n"
                     "👤 *ФИО:* {full_name}\n"
@@ -367,15 +358,63 @@ class ContentConfig:
                     }
                 },
                 "cancel": {
-                    "message": "❌ Отменить заказ"
+                    "message": "❌ Отменить заказ",
+                    "success": {
+                        "message": "✅ Заказ №{order_number} отменён."
+                    },
+                    "reason": {
+                        "text": "Введите причину отмены заказа для пользователя:",
+                        "message": (
+                            "⚠️ К сожалению ваш заказ №{order_number} был отменён Nadine.\n" 
+                            "Причина: {cancel_reason}\n"
+                            "{order_text}\n"
+                        )
+                    },
+                    "error": {
+                        "message": "❌ Не удалось отменить заказ №{order_number}"
+                    }
                 },
                 "send": {
                     "for_payment": {
-                        "message": "💳 Отправить на оплату"
+                        "message": "💳 Отправить на оплату",
+                        "text": "Отправьте файл счёта на оплату (документ или изображение):",
+                        "success": {
+                            "message": "✅ Инвойс для заказа №{order_number} отправлен пользователю."
+                        }
                     },
                     "receipt": {
                         "message": "🧾 Отправить чек"
+                    },
+                    "incorrect_file_format": {
+                        "message": "❌ Неверный формат файла."
                     }
+                },
+                "user_not_found": {
+                    "message": "❌ Пользователь не найден."
+                }
+            }
+        },
+        "user": {
+            "cancel": {
+                "message": "❌ Отменить заказ",
+                "success": {
+                    "message": "✅ Заказ №{order_number} отменён."
+                },
+                "error": {
+                    "message": "❌ Не удалось отменить заказ №{order_number}"
+                }
+            },
+            "send": {
+                "for_payment": {
+                    "text": (
+                        "✅ *Благодарю вас за оформление заказа №{order_number}*\n\n"
+                        "📦 *Ваш заказ:*\n{products_text}\n\n"
+                        "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
+                        "💰 *Общая сумма:* {total_with_delivery}\n\n"
+                        "💳 Пожалуйста, произведите оплату по номеру телефона: [{admin_phone}](tel:{admin_phone})\n"
+                        "После оплаты ожидайте подтверждения Nadine. Как только чек будет проверен, вы получите уведомление и данные о доставке.\n\n"
+                        "🙏 Спасибо за заказ!"
+                    )
                 }
             }
         }
@@ -511,7 +550,11 @@ class ContentConfig:
         return cls.order.place.empty_fields.message.format(fields_string=fields_string)
     
     @classmethod
-    def get_order_admin_product_details_long_text(
+    def get_order_place_transfer_to_admin_message(cls, order_number: int):
+        return cls.order.place.transfer_to_admin.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_admin_product_details_text(
         cls,
         name: str,
         article_number: int,
@@ -523,7 +566,7 @@ class ContentConfig:
         production_time: NumericRange,
         production_time_units: str
     ):
-        return cls.order.admin.product.details.long.text.format(
+        return cls.order.admin.product.details.text.format(
             name=name.capitalize(),
             article_number=article_number,
             price=round(float(price), 2),
@@ -536,26 +579,9 @@ class ContentConfig:
         )
         
     @classmethod
-    def get_order_admin_product_details_short_text(
-        cls,
-        name: str,
-        article_number: int,
-        price: float,
-        quantity: int,
-        product_total: float,
-    ):
-        return cls.order.admin.product.details.short.text.format(
-            name=name.capitalize(),
-            article_number=article_number,
-            price=round(float(price), 2),
-            quantity=quantity,
-            product_total=round(float(product_total), 2),
-        )
-        
-    @classmethod
     def get_order_admin_new_text(
         cls,
-        order_id: str,
+        order_number: int,
         tg_username: str,
         tg_full_name: str,
         full_name: str,
@@ -570,7 +596,7 @@ class ContentConfig:
         if delivery_price is not None:
             delivery_price_text = cls.order.admin.new.delivery_price.text.format(delivery_price=round(float(delivery_price), 2))
         return cls.order.admin.new.text.format(
-            order_id=order_id,
+            order_number=order_number,
             tg_username=tg_username,
             tg_full_name=tg_full_name,
             full_name=full_name,
@@ -581,3 +607,53 @@ class ContentConfig:
             total_price=round(float(total_price), 2),
             delivery_price_text=delivery_price_text
         )
+    
+    @classmethod
+    def get_order_admin_new_cancel_success_message(cls, order_number: str):
+        return cls.order.admin.new.cancel.success.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_admin_new_cancel_reason_message(
+        cls, 
+        order_number: int,
+        cancel_reason: str,
+        order_text: str
+    ):
+        return cls.order.admin.new.cancel.reason.message.format(
+            order_number=order_number,
+            cancel_reason=cancel_reason,
+            order_text=order_text
+        )
+    
+    @classmethod
+    def get_order_admin_new_cancel_error_message(cls, order_number: str):
+        return cls.order.admin.new.cancel.error.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_user_cancel_success_message(cls, order_number: str):
+        return cls.order.user.cancel.success.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_user_cancel_error_message(cls, order_number: str):
+        return cls.order.user.cancel.error.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_user_send_for_payment_text(
+        cls,
+        order_number: int,
+        products_text: str,
+        delivery_price: float,
+        total_with_delivery: float,
+        admin_phone: str
+    ):
+        return cls.order.user.send.for_payment.text.format(
+            order_number=order_number,
+            products_text=products_text,
+            delivery_price=round(float(delivery_price), 2),
+            total_with_delivery=round(float(total_with_delivery), 2),
+            admin_phone=admin_phone
+        )
+        
+    @classmethod
+    def get_order_admin_new_send_for_payment_success_message(cls, order_number: int):
+        return cls.order.admin.new.send.for_payment.success.message.format(order_number=order_number)

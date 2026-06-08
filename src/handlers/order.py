@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Tuple
+from typing import Tuple, Dict, List, Any
 
 from telebot import TeleBot
 
@@ -15,12 +15,17 @@ from src.states.order_session import (
 from src.keyboards import (
     order_user_profile_field_keyboard,
     order_final_summary_keyboard,
+    order_user_cancel_keyboard,
     order_set_delivery_price_keyboard,
     order_send_keyboard
 )
 from src.utils.profile import check_and_update_user_profile_field
 from src.utils.clean import delete_message
-from src.handlers.shared import get_cart_content
+from src.handlers.shared import (
+    get_cart_content, 
+    get_order_content, 
+    get_products_text_and_total_price
+)
 from src.utils.content import get_production_time_days_ru_format, str_to_numeric_range
 
 def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
@@ -210,12 +215,6 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message)
             return
         
-        cart_products = db.get_cart_products(tg_user_id)
-        if not cart_products:
-            delete_order_session(tg_user_id)
-            bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
-            return
-        
         full_name, phone, delivery_company, delivery_point_address = db.get_user_profile_data(tg_user_id)
         empty_fields = []
         if not full_name:
@@ -233,6 +232,11 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         tg_username, tg_full_name = db.get_user_tg_data(tg_user_id)
         
+        cart_products = db.get_cart_products(tg_user_id)
+        if not cart_products:
+            bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
+            return
+        
         total_price = sum(product["price"] * product["quantity"] for product in cart_products)
         order_id = db.create_order(tg_user_id, total_price, delivery_company, delivery_point_address)
         if not order_id:
@@ -240,43 +244,23 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             bot.send_message(call.message.chat.id, content_cfg.order.place.error.message)
             return
         
-        bot.send_message(call.message.chat.id, content_cfg.order.place.transfer_to_admin.message)
+        order_number = db.get_order_number_by_order_id(order_id)
+        bot.send_message(
+            call.message.chat.id, 
+            content_cfg.get_order_place_transfer_to_admin_message(order_number),
+            parse_mode="Markdown",
+            reply_markup=order_user_cancel_keyboard(content_cfg, order_id)
+        )
+        
+        order = db.get_order(order_id)
         
         admin_user_id = db.get_admin_user_id()
         if admin_user_id:
-            products_details = []
-            for product in cart_products:
-                product_data = db.get_product_by_article_number(product["article_number"])
-                if product_data:
-                    details = content_cfg.get_order_admin_product_details_long_text(
-                        product["name"],
-                        product["article_number"],
-                        product["price"],
-                        product["quantity"],
-                        product["price"] * product["quantity"],
-                        product_data["category"],
-                        product_data["materials_list"],
-                        product_data["production_time"],
-                        get_production_time_days_ru_format(
-                            product_data["production_time"], 
-                            content_cfg.product.production_time.unit_1,
-                            content_cfg.product.production_time.unit_234,
-                            content_cfg.product.production_time.unit_other
-                        )
-                    )
-                else:
-                    details = content_cfg.get_order_admin_product_details_short_text(
-                        product["name"],
-                        product["article_number"],
-                        product["price"],
-                        product["quanity"],
-                        product["price"] * product["quanity"]
-                    )
-                products_details.append(details)
-                
+            products_details = get_order_products_details(order["products"])
             products_text = "\n\n".join(products_details)
+            
             new_order_text = content_cfg.get_order_admin_new_text(
-                order_id,
+                order["order_number"],
                 tg_username,
                 tg_full_name,
                 full_name,
@@ -329,30 +313,11 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         logger.debug("show_order CALL")
         
         order = db.get_order(order_id)
-        products_details = []
-        for product in order["products"]:
-            production_time_range = str_to_numeric_range(product.get('production_time'))
-            details = content_cfg.get_order_admin_product_details_long_text(
-                product["name"],
-                product["article_number"],
-                product["price_at_order"],
-                product["quantity"],
-                product["price_at_order"] * product["quantity"],
-                product["category"],
-                product["materials"],
-                production_time_range,
-                get_production_time_days_ru_format(
-                    production_time_range, 
-                    content_cfg.product.production_time.unit_1,
-                    content_cfg.product.production_time.unit_234,
-                    content_cfg.product.production_time.unit_other
-                )
-            )
-            products_details.append(details)
-
+        products_details = get_order_products_details(order["products"])
         products_text = "\n\n".join(products_details)
+        
         order_text = content_cfg.get_order_admin_new_text(
-                order_id,
+                order["order_number"],
                 order["tg_username"] ,
                 order["tg_full_name"],
                 order["full_name"],
@@ -369,3 +334,146 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             parse_mode="Markdown",
             reply_markup=order_send_keyboard(content_cfg, order_id)
         )
+        
+    def get_order_products_details(products: Dict[str, Any]) -> List[Any]:
+        logger.debug("get_order_products_details CALL")
+        
+        products_details = []
+        for product in products:
+            production_time_range = str_to_numeric_range(product.get('production_time'))
+            details = content_cfg.get_order_admin_product_details_text(
+                product["name"],
+                product["article_number"],
+                product["price_at_order"],
+                product["quantity"],
+                product["price_at_order"] * product["quantity"],
+                product["category"],
+                product["materials"],
+                production_time_range,
+                get_production_time_days_ru_format(
+                    production_time_range, 
+                    content_cfg.product.production_time.unit_1,
+                    content_cfg.product.production_time.unit_234,
+                    content_cfg.product.production_time.unit_other
+                )
+            )
+            products_details.append(details)
+        return products_details
+    
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("admin_cancel_order_"))
+    @err_handler
+    def admin_cancel_order(call):
+        logger.debug("admin_cancel_order CALL")
+        
+        order_id = (call.data.split("_")[3])
+        
+        prompt = content_cfg.order.admin.new.cancel.reason.text
+        message = bot.send_message(call.message.chat.id, prompt)
+        bot.register_next_step_handler(
+            message,
+            execute_admin_cancel_order,
+            order_id
+        )
+        
+    def execute_admin_cancel_order(message, order_id: str):
+        logger.debug("execute_admin_cancel_order CALL")
+        
+        cancel_reason = message.text.strip()
+        order_number = db.get_order_number_by_order_id(order_id)
+        success = db.cancel_order(order_id)
+        if success:
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.get_order_admin_new_cancel_success_message(order_number)
+            )
+            tg_user_id = db.get_tg_user_id_by_order_id(order_id)
+            if tg_user_id:
+                header_text = content_cfg.order.place.final.header_text
+                order_text = get_order_content(
+                    order_id, db, content_cfg, logger, header_text
+                )
+                bot.send_message(
+                    tg_user_id, 
+                    content_cfg.get_order_admin_new_cancel_reason_message(order_number, cancel_reason, order_text),
+                    parse_mode="Markdown"
+                )
+            else:
+                bot.send_message(message.chat.id, content_cfg.order.admin.new.user_not_found.message)
+        else:
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.get_order_admin_new_cancel_error_message(order_number)
+            )
+            
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("send_for_payment_"))
+    @err_handler
+    def send_for_payment(call):
+        logger.debug("send_for_payment CALL")
+        
+        order_id = (call.data.split("_")[3])
+        
+        prompt = content_cfg.order.admin.new.send.for_payment.text
+        message = bot.send_message(call.message.chat.id, prompt)
+        bot.register_next_step_handler(
+            message,
+            process_invoice,
+            order_id
+        )
+
+    def process_invoice(message, order_id: str):
+        logger.debug("process_invoice CALL")
+        
+        admin_chat_id = message.chat.id
+        
+        invoice_file =  None
+        if message.document:
+            invoice_file = message.document.file_id
+            file_type = "document"
+        elif message.photo:
+            invoice_file = message.photo[-1].file_id
+            file_type = "photo"
+        else:
+            bot.send_message(admin_chat_id, content_cfg.order.admin.new.send.incorrect_file_format.message)
+            return
+        
+        tg_user_id = db.get_tg_user_id_by_order_id(order_id)
+        if not tg_user_id:
+            bot.send_message(admin_chat_id, content_cfg.order.admin.new.user_not_found.message)
+            return
+        
+        order_data = db.get_order_number_and_delivery_price(order_id)
+        order_number = order_data["order_number"]
+        delivery_price = order_data["delivery_price"]
+        
+        products = db.get_order_products(order_id)
+        products_text, total = get_products_text_and_total_price(products, content_cfg, logger)
+        
+        admin_phone = db.get_admin_phone()
+        
+        total_with_delivery = total + delivery_price
+        for_payment_text = content_cfg.get_order_user_send_for_payment_text(
+            order_number, products_text, delivery_price, total_with_delivery, admin_phone
+        )
+        
+        if file_type == "document":
+            bot.send_document(
+                tg_user_id,
+                invoice_file,
+                caption=for_payment_text,
+                parse_mode="Markdown",
+                reply_markup=order_user_cancel_keyboard(content_cfg, order_id)
+            )
+        else:
+            bot.send_photo(
+                tg_user_id,
+                invoice_file,
+                caption=for_payment_text,
+                parse_mode="Markdown",
+                reply_markup=order_user_cancel_keyboard(content_cfg, order_id)
+            )
+        bot.send_message(admin_chat_id, content_cfg.get_order_admin_new_send_for_payment_success_message(order_number))
+        bot.delete_message(admin_chat_id, message.message_id)
+
+            
+        
+    

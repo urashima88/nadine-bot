@@ -60,8 +60,7 @@ class Storage:
                         p.article_number,
                         p.name,
                         p.price,
-                        c.quantity,
-                        p.image_dir
+                        c.quantity
                     FROM cart c
                     JOIN users u ON c.user_id = u.id
                     JOIN products p ON c.product_id = p.id
@@ -403,6 +402,7 @@ class Storage:
                 cur.execute("""
                     SELECT 
                         o.id AS order_id,
+                        o.order_number,
                         u.tg_username,
                         u.tg_full_name,
                         u.full_name,
@@ -442,6 +442,85 @@ class Storage:
                 if row:
                     return dict(row)
                 return None
+            
+    def get_tg_user_id_by_order_id(self, order_id: str) -> Optional[int]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT u.tg_user_id
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE o.id = %s::uuid
+                """, (order_id,))
+                row = cur.fetchone()
+                return row['tg_user_id'] if row else None
+            
+    def cancel_order(self, order_id: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE orders
+                    SET status = 'отменён', updated_at = NOW()
+                    WHERE id = %s::uuid AND status = 'на рассмотрении'
+                    RETURNING id
+                """, (order_id,))
+                row = cur.fetchone()
+                return row is not None
+    
+    def get_order_products(self, order_id: str) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        p.article_number,
+                        p.name,
+                        op.price_at_order AS price,
+                        op.quantity
+                    FROM order_products op
+                    JOIN products p ON op.product_id = p.id
+                    WHERE op.order_id = %s::uuid
+                    ORDER BY op.id;
+                """, (order_id,))
+                return cur.fetchall()
+            
+    def get_order_number_by_order_id(self, order_id: str) -> Optional[int]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT order_number
+                    FROM orders
+                    WHERE id = %s::uuid
+                """, (order_id,))
+                row = cur.fetchone()
+                return row['order_number'] if row else None
+            
+    def get_order_number_and_delivery_price(self, order_id: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT order_number, delivery_price
+                    FROM orders
+                    WHERE id = %s::uuid
+                """, (order_id,))
+                row = cur.fetchone()
+                if row:
+                    return {
+                        'order_number': row['order_number'],
+                        'delivery_price': row['delivery_price']
+                    }
+                return None
+            
+    def get_admin_phone(self) -> Optional[str]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT phone
+                    FROM users
+                    WHERE is_admin = true
+                    LIMIT 1
+                """)
+                row = cur.fetchone()
+                return row['phone'] if row else None
     
     def close(self):
         self.pool.closeall()
