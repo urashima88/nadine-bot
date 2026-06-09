@@ -225,6 +225,7 @@ class Storage:
                     SELECT 
                         u.full_name, 
                         u.phone,
+                        u.timezone,
                         COALESCE(d.company, '') AS company,
                         COALESCE(d.address, '') AS address
                     FROM users u
@@ -236,10 +237,11 @@ class Storage:
                     return (
                         row.get('full_name') or '', 
                         row.get('phone') or '', 
+                        row.get('timezone') or '',
                         row.get('company') or '', 
                         row.get('address') or ''
                     )
-                return ('', '', '', '')
+                return ('', '', '', '', '')
             
     def update_user_full_name(self, tg_user_id: int, full_name: str) -> bool:
         with self._get_connection() as conn:
@@ -261,6 +263,17 @@ class Storage:
                     WHERE tg_user_id = %s
                     RETURNING id
                 """, (phone, tg_user_id))
+                return cur.fetchone() is not None
+            
+    def update_user_timezone(self, tg_user_id: int, timezone: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE users
+                    SET timezone = %s, updated_at = NOW()
+                    WHERE tg_user_id = %s
+                    RETURNING id
+                """, (timezone, tg_user_id))
                 return cur.fetchone() is not None
             
     def update_delivery_company(self, tg_user_id: int, company: str) -> bool:
@@ -339,7 +352,7 @@ class Storage:
                         SELECT id FROM users WHERE tg_user_id = %s
                     ),
                     inserted_order AS (
-                        INSERT INTO orders (user_id, delivery_company_snapshot, delivery_address_snapshot,
+                        INSERT INTO orders (user_id, delivery_company_snapshot, delivery_point_address_snapshot,
                                             order_price, status, created_at, updated_at)
                         SELECT id, %s, %s, %s, 'на рассмотрении', NOW(), NOW()
                         FROM cur_user
@@ -407,12 +420,14 @@ class Storage:
                         u.tg_full_name,
                         u.full_name,
                         u.phone,
-                        COALESCE(d.company, '') AS delivery_company,
-                        COALESCE(d.address, '') AS delivery_point_address,
+                        u.timezone,
+                        o.delivery_company_snapshot AS delivery_company,
+                        o.delivery_point_address_snapshot AS delivery_point_address,
                         o.order_price,
                         o.delivery_price,
                         o.status,
                         o.created_at,
+                        o.delivery_info,
                         COALESCE(
                             (SELECT json_agg(
                                 json_build_object(
@@ -435,7 +450,6 @@ class Storage:
                         ), '[]'::json) AS products
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
-                    LEFT JOIN delivery_points d ON u.id = d.user_id
                     WHERE o.id = %s::uuid
                 """, (order_id,))
                 row = cur.fetchone()
@@ -443,17 +457,24 @@ class Storage:
                     return dict(row)
                 return None
             
-    def get_tg_user_id_by_order_id(self, order_id: str) -> Optional[int]:
+    def get_tg_user_id_and_timezone(self, order_id: str) -> Tuple[Any]:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
-                    SELECT u.tg_user_id
+                    SELECT 
+                        u.tg_user_id,
+                        u.timezone
                     FROM orders o
                     JOIN users u ON o.user_id = u.id
                     WHERE o.id = %s::uuid
                 """, (order_id,))
                 row = cur.fetchone()
-                return row['tg_user_id'] if row else None
+                if row:
+                    return (
+                        row['tg_user_id'],
+                        row['timezone'] or ''
+                    )
+                return None, ''
             
     def cancel_order(self, order_id: str) -> bool:
         with self._get_connection() as conn:
@@ -494,11 +515,14 @@ class Storage:
                 row = cur.fetchone()
                 return row['order_number'] if row else None
             
-    def get_order_number_and_delivery_price(self, order_id: str) -> Optional[Dict[str, Any]]:
+    def get_order_number_delivery_price_created_at(self, order_id: str) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
-                    SELECT order_number, delivery_price
+                    SELECT 
+                        order_number, 
+                        delivery_price, 
+                        created_at
                     FROM orders
                     WHERE id = %s::uuid
                 """, (order_id,))
@@ -506,7 +530,8 @@ class Storage:
                 if row:
                     return {
                         'order_number': row['order_number'],
-                        'delivery_price': row['delivery_price']
+                        'delivery_price': row['delivery_price'],
+                        'created_at': row['created_at']
                     }
                 return None
             
@@ -521,6 +546,63 @@ class Storage:
                 """)
                 row = cur.fetchone()
                 return row['phone'] if row else None
+            
+    def set_delivery_info(self, order_id: str, delivery_info: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE orders
+                    SET delivery_info = %s, updated_at = NOW()
+                    WHERE id = %s::uuid
+                    RETURNING id
+                """, (delivery_info, order_id))
+                return cur.fetchone() is not None
+            
+    def get_user_orders(self, tg_user_id: int) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        o.id AS order_id,
+                        o.order_number,
+                        u.timezone,
+                        o.delivery_company_snapshot AS delivery_company,
+                        o.delivery_point_address_snapshot AS delivery_point_address,
+                        o.delivery_price,
+                        o.delivery_info,
+                        o.status,
+                        o.created_at,
+                        COALESCE(
+                            (SELECT json_agg(
+                                json_build_object(
+                                    'article_number', p.article_number,
+                                    'name', p.name,
+                                    'price_at_order', op.price_at_order,
+                                    'quantity', op.quantity
+                                ) ORDER BY op.id
+                            )
+                            FROM order_products op
+                            JOIN products p ON op.product_id = p.id
+                            WHERE op.order_id = o.id
+                        ), '[]'::json) AS products
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE u.tg_user_id = %s
+                    ORDER BY o.created_at DESC
+                """, (tg_user_id,))
+                rows = cur.fetchall()
+                return [dict(row) for row in rows]
+            
+    def update_order_status(self, order_id: str, status: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE orders
+                    SET status = %s, updated_at = NOW()
+                    WHERE id = %s::uuid
+                    RETURNING id
+                """, (status, order_id))
+                return cur.fetchone() is not None
     
     def close(self):
         self.pool.closeall()

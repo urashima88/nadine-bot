@@ -12,7 +12,7 @@ from src.keyboards import (
 )
 from src.utils.wrappers import error_handler
 from src.utils.clean import delete_message
-from src.utils.profile import check_and_update_user_profile_field
+from src.handlers.shared import check_and_update_user_profile_field
 
 def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
     err_handler = error_handler(bot, content_cfg, logger)
@@ -64,8 +64,8 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
     def show_profile(chat_id: int, user_id: int):
         logger.debug("show_profile CALL")
         
-        full_name, phone, delivery_company, delivery_point_address = db.get_user_profile_data(user_id)
-        profile_text = content_cfg.get_common_user_profile_text(full_name, phone, delivery_company, delivery_point_address)    
+        full_name, phone, timezone, delivery_company, delivery_point_address = db.get_user_profile_data(user_id)
+        profile_text = content_cfg.get_common_user_profile_text(full_name, phone, timezone, delivery_company, delivery_point_address)    
         
         bot.send_message(
             chat_id, 
@@ -81,7 +81,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         
         show_profile(message.chat.id, message.from_user.id)
     
-    @bot.callback_query_handler(func=lambda call: call.data in ("edit_full_name", "edit_phone", "edit_delivery_company", "edit_delivery_point_address"))
+    @bot.callback_query_handler(func=lambda call: call.data in ("edit_full_name", "edit_phone", "edit_timezone", "edit_delivery_company", "edit_delivery_point_address"))
     @err_handler
     def ask_for_new_value(call):
         logger.debug("ask_for_new_value CALL")
@@ -92,6 +92,8 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
             prompt = content_cfg.common.user.profile.edit.full_name.text
         elif call_data == "edit_phone":
             prompt = content_cfg.common.user.profile.edit.phone.text
+        elif call_data == "edit_timezone":
+            prompt = content_cfg.common.user.profile.edit.timezone.text
         elif call_data == "edit_delivery_company":
             prompt = content_cfg.common.user.profile.edit.delivery_company.text
         else:

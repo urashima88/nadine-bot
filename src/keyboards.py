@@ -8,7 +8,7 @@ def main_menu_keyboard(content_cfg: ContentConfig):
         types.KeyboardButton(content_cfg.catalog.message),
         types.KeyboardButton(content_cfg.cart.message),
         types.KeyboardButton(content_cfg.common.user.personal_data.message),
-        types.KeyboardButton(content_cfg.common.user.orders.message),
+        types.KeyboardButton(content_cfg.order.user.message),
         types.KeyboardButton(content_cfg.common.admin.contacts.message),
         types.KeyboardButton(content_cfg.common.admin.about.message)
     ]
@@ -79,68 +79,88 @@ def cart_control_edit_mode_keyboard(content_cfg: ContentConfig) -> types.ReplyKe
     markup.add(*buttons)
     return markup
 
-def cart_edit_product_keyboard(content_config: ContentConfig, article_number: int, quantity: str):
+def cart_edit_product_keyboard(content_cfg: ContentConfig, article_number: int, quantity: str):
     markup = types.InlineKeyboardMarkup(row_width=3)
     buttons = [
-        types.InlineKeyboardButton(content_config.cart.edit.product.decrease.message, callback_data=f"decrease_product_{article_number}"),
+        types.InlineKeyboardButton(content_cfg.cart.edit.product.decrease.message, callback_data=f"decrease_product_{article_number}"),
         types.InlineKeyboardButton(quantity, callback_data="ignore"),
-        types.InlineKeyboardButton(content_config.cart.edit.product.increase.message, callback_data=f"increase_product_{article_number}"),
-        types.InlineKeyboardButton(content_config.cart.edit.product.delete.message, callback_data=f"delete_product_{article_number}")
+        types.InlineKeyboardButton(content_cfg.cart.edit.product.increase.message, callback_data=f"increase_product_{article_number}"),
+        types.InlineKeyboardButton(content_cfg.cart.edit.product.delete.message, callback_data=f"delete_product_{article_number}")
     ]
     markup.add(*buttons)
     return markup
 
-def common_user_profile_edit_keyboard(content_config: ContentConfig):
+def common_user_profile_edit_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(content_config.common.user.profile.edit.full_name.message, callback_data="edit_full_name"),
-        types.InlineKeyboardButton(content_config.common.user.profile.edit.phone.message, callback_data="edit_phone"),
-        types.InlineKeyboardButton(content_config.common.user.profile.edit.delivery_company.message, callback_data="edit_delivery_company"),
-        types.InlineKeyboardButton(content_config.common.user.profile.edit.delivery_point_address.message, callback_data="edit_delivery_point_address"),
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.full_name.message, callback_data="edit_full_name"),
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.phone.message, callback_data="edit_phone"),
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.timezone.message, callback_data="edit_timezone"),
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.delivery_company.message, callback_data="edit_delivery_company"),
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.delivery_point_address.message, callback_data="edit_delivery_point_address"),
     ]
     markup.add(*buttons)
     return markup
 
-def order_user_profile_field_keyboard(content_config: ContentConfig):
+def order_user_profile_field_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_config.common.user.profile.edit.yes.message, callback_data="edit_field_yes"),
-        types.InlineKeyboardButton(content_config.common.user.profile.edit.no.message, callback_data="edit_field_no")
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.yes.message, callback_data="edit_field_yes"),
+        types.InlineKeyboardButton(content_cfg.common.user.profile.edit.no.message, callback_data="edit_field_no")
     ]
     markup.add(*buttons)
     return markup
 
-def order_final_summary_keyboard(content_config: ContentConfig):
+def order_final_summary_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(content_config.order.place.final.message, callback_data="place_order")
+        types.InlineKeyboardButton(content_cfg.order.place.final.message, callback_data="place_order")
     ]
     markup.add(*buttons)
     return markup
 
-def order_set_delivery_price_keyboard(content_config: ContentConfig, order_id: str):
+def order_set_delivery_price_keyboard(content_cfg: ContentConfig, order_id: str):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_config.order.admin.new.set_delivery_price.message, callback_data=f"set_delivery_price_{order_id}"),
-        types.InlineKeyboardButton(content_config.order.admin.new.cancel.message, callback_data=f"admin_cancel_order_{order_id}")
+        types.InlineKeyboardButton(content_cfg.order.admin.new.set_delivery_price.message, callback_data=f"set_delivery_price_{order_id}"),
+        types.InlineKeyboardButton(content_cfg.order.admin.new.cancel.message, callback_data=f"admin_cancel_order_{order_id}")
     ]
     markup.add(*buttons)
     return markup
 
-def order_send_keyboard(content_config: ContentConfig, order_id: str):
+def order_send_keyboard(content_cfg: ContentConfig, order_id: str):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_config.order.admin.new.send.for_payment.message, callback_data=f"send_for_payment_{order_id}"),
-        types.InlineKeyboardButton(content_config.order.admin.new.send.receipt.message, callback_data=f"send_receipt_{order_id}"),
-        types.InlineKeyboardButton(content_config.order.admin.new.cancel.message, callback_data=f"admin_cancel_order_{order_id}")
+        types.InlineKeyboardButton(content_cfg.order.admin.new.send.for_payment.message, callback_data=f"send_for_payment_{order_id}"),
+        types.InlineKeyboardButton(content_cfg.order.admin.new.send.receipt.message, callback_data=f"send_receipt_{order_id}"),
+        types.InlineKeyboardButton(content_cfg.order.admin.new.cancel.message, callback_data=f"admin_cancel_order_{order_id}")
     ]
     markup.add(*buttons)
     return markup
 
-def order_user_cancel_keyboard(content_config: ContentConfig, order_id: str):
+def order_user_cancel_keyboard(content_cfg: ContentConfig, order_id: str):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(content_config.order.user.cancel.message, callback_data=f"user_cancel_order_{order_id}")
+        types.InlineKeyboardButton(content_cfg.order.user.cancel.message, callback_data=f"user_cancel_order_{order_id}")
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_user_control_show_mode_keyboard(content_cfg: ContentConfig):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton(content_cfg.order.user.all.control_show.next.message),
+        types.KeyboardButton(content_cfg.order.user.all.control_show.next5.message),
+        types.KeyboardButton(content_cfg.order.user.all.control_show.go_back_to_main_menu.message)
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_user_control_show_current_keyboard(content_cfg: ContentConfig, order_id: str):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.order.user.all.control_show.current.copy_to_cart.message, callback_data=f"copy_to_cart_{order_id}"),
+        types.InlineKeyboardButton(content_cfg.order.user.all.control_show.current.cancel.message, callback_data=f"user_cancel_order_{order_id}")
     ]
     markup.add(*buttons)
     return markup

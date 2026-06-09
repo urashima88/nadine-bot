@@ -1,5 +1,7 @@
-from psycopg2.extras import NumericRange
 import re
+from datetime import datetime, timedelta
+
+from psycopg2.extras import NumericRange
 
 UNIT_EXCEPTIONS_OTHER = {"11", "12", "13", "14"}
 UNIT_EXCEPTIONS_234 = {"2", "3", "4"}
@@ -32,3 +34,12 @@ def str_to_numeric_range(range_str: str) -> NumericRange | None:
     upper_inc = (right_bound == ']')
     bounds = f"{'[' if lower_inc else '('}{']' if upper_inc else ')'}"
     return NumericRange(lower, upper, bounds=bounds)
+
+def format_local_datetime(dt: datetime, timezone_str: str) -> str:
+    match = re.match(r'UTC([+-])(\d+)', timezone_str)
+    if not match:
+        return dt.strftime("%d.%m.%Y в %H:%M (UTC)")
+    sign, hours = match.groups()
+    offset_hours = int(hours) * (1 if sign == '+' else -1)
+    local_dt = dt + timedelta(hours=offset_hours)
+    return local_dt.strftime(f"%d.%m.%Y в %H:%M (UTC{sign}{hours})")

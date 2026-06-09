@@ -20,7 +20,7 @@ class ContentConfig:
             },
         },
         "total": {
-            "text": "\n\n💰 *Итого: {total} ₽*"
+            "text": "\n\n💰 *Итого:* {total} ₽"
         },
         "message": "🛒 Корзина",
         "edit": {
@@ -121,7 +121,7 @@ class ContentConfig:
                 "Используйте кнопки внизу для навигации."
             ),
             "next": {"message": "➡️ Следующий товар"},
-            "next5": {"message": "5️⃣ Следующие 5"},
+            "next5": {"message": "5️⃣ Следующие 5 товаров"},
             "stop": {"message": "⏹ Остановить показ"},
             "go_back_to_main_menu": {"message": "◀️ В главное меню"}
         },
@@ -168,14 +168,12 @@ class ContentConfig:
             "personal_data": {
                 "message": "👤 Личные данные"
             },
-            "orders": {
-                "message": "📦 Мои заказы"
-            },
             "profile": {
                 "text": (
                     "👤 *Личные данные*\n\n"
                     "📛 *ФИО:* {full_name}\n"
                     "📱 *Телефон:* {phone}\n"
+                    "🌐 *Часовой пояс:* {timezone}\n"
                     "🚚 *Служба доставки:* {delivery_company}\n"
                     "📍 *Адрес пункта выдачи:* {delivery_point_address}" 
                 ),
@@ -198,6 +196,22 @@ class ContentConfig:
                         "text": "Введите номер телефона:",
                         "update": {
                             "message": "✅ Номер телефона был успешно обновлён."
+                        },
+                        "wrong_format": {
+                            "message": "❌ Неверный формат телефона. Введите номер например в таком формате +7.........."
+                        },
+                    },
+                    "timezone": {
+                        "message": "✏️ Изменить часовой пояс",
+                        "text": "Введите ваш часовой пояс в формате ±число, где число – смещение от UTC (целое число, например, +3, -5, 0):",
+                        "update": {
+                            "message": "✅ Часовой пояс был успешно обновлён."
+                        },
+                        "wrong_format": {
+                            "message": "❌ Неверный формат. Введите, например: +3, или 2, или -5"
+                        },
+                        "offset_exceed": {
+                            "message": "❌ Смещение не может превышать ±12 часов."
                         }
                     },
                     "delivery_company": {
@@ -234,9 +248,6 @@ class ContentConfig:
                     },
                     "empty_value": {
                         "message": "❌ Значение не может быть пустым."
-                    },
-                    "wrong_phone_format": {
-                        "message": "❌ Неверный формат телефона. Введите номер например в таком формате +7.........."
                     },
                     "update_error": {
                         "message": "❌ Ошибка обновления. Попробуйте позже."
@@ -331,15 +342,16 @@ class ContentConfig:
             "new": {
                 "text": (
                     "🆕 *НОВЫЙ ЗАКАЗ №{order_number}*\n\n"
+                    "📅 *Дата оформления заказа:* {created_at}\n\n"
                     "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
                     "📛 *Имя в Telegram:* {tg_full_name}\n"
                     "👤 *ФИО:* {full_name}\n"
                     "📱 *Телефон*: [{phone}](tel:{phone})\n"
                     "🚚 *Служба доставки:* {delivery_company}\n"
                     "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
-                    "📦 *Состав заказа:*\n\n{products_text}\n"
+                    "📦 *Состав заказа:*\n\n{products_text}\n\n"
                     "{delivery_price_text}"
-                    "💰 *Общая сумма: {total_price} ₽*"
+                    "💰 *Общая сумма:* {total_price} ₽\n"
                 ),
                 "delivery_price": {
                     "text": "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
@@ -383,7 +395,22 @@ class ContentConfig:
                         }
                     },
                     "receipt": {
-                        "message": "🧾 Отправить чек"
+                        "message": "🧾 Отправить чек",
+                        "file": {
+                            "text": "Отправьте файл чека (документ или изображение):",
+                        },
+                        "delivery_info": {
+                            "text": "Введите данные о доставке:",
+                            "is_empty": {
+                                "message": "❌ Вы не ввели данные о доставке."
+                            },
+                            "failed_to_set": {
+                                "message": "❌ Не удалось сохранить данные о доставке. Попробуйте позже."
+                            }
+                        },
+                        "success": {
+                            "message": "✅ Чек для заказа №{order_number} отправлен пользователю."
+                        }
                     },
                     "incorrect_file_format": {
                         "message": "❌ Неверный формат файла."
@@ -395,6 +422,7 @@ class ContentConfig:
             }
         },
         "user": {
+            "message": "📦 Мои заказы",
             "cancel": {
                 "message": "❌ Отменить заказ",
                 "success": {
@@ -408,14 +436,80 @@ class ContentConfig:
                 "for_payment": {
                     "text": (
                         "✅ *Благодарю вас за оформление заказа №{order_number}*\n\n"
+                        "📅 *Дата оформления заказа:* {created_at}\n"
+                        "📌 *Статус заказа:* {status}\n\n"
                         "📦 *Ваш заказ:*\n{products_text}\n\n"
                         "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
-                        "💰 *Общая сумма:* {total_with_delivery}\n\n"
+                        "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
                         "💳 Пожалуйста, произведите оплату по номеру телефона: [{admin_phone}](tel:{admin_phone})\n"
                         "После оплаты ожидайте подтверждения Nadine. Как только чек будет проверен, вы получите уведомление и данные о доставке.\n\n"
                         "🙏 Спасибо за заказ!"
                     )
+                },
+                "receipt": {
+                    "text": (
+                        "🧾 *Чек и информация по доставке для заказа №{order_number}*\n\n"
+                        "📅 *Дата оформления заказа:* {created_at}\n"
+                        "📌 *Статус заказа:* {status}\n\n"
+                        "📦 *Ваш заказ:*\n{products_text}\n\n"
+                        "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
+                        "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
+                        "🚛 *Информация по доставке:\n*{delivery_info}\n\n"
+                    )
                 }
+            },
+            "all": {
+                "is_empty": {
+                    "message": "У вас нет заказов"
+                },
+                "control_show": {
+                    "text": (
+                        "Всего заказов: {number_orders}\n"
+                        "Используйте кнопки внизу для навигации."
+                    ),
+                    "next": {"message": "➡️ Следующий заказ"},
+                    "next5": {"message": "5️⃣ Следующие 5 заказов"},
+                    "go_back_to_main_menu": {"message": "◀️ Перейти в главное меню"},
+                    "session_not_found": {
+                        "message": "⚠️ Сессия не найдена. Нажмите '📦 Мои заказы'"
+                    },
+                    "current": {
+                        "text": (
+                            "✅ *Заказ №{order_number}*\n\n"
+                            "📅 *Дата оформления заказа:* {created_at}\n"
+                            "📌 *Статус заказа:* {status}\n\n"
+                            "📦 *Ваш заказ:*\n{products_text}\n\n"
+                            "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
+                            "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
+                            "🚚 *Служба доставки:* {delivery_company}\n"
+                            "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                            "🚛 *Информация по доставке:\n*{delivery_info}\n"
+                        ),
+                        "cancel": {
+                            "message": "❌ Отменить заказ"
+                        },
+                        "copy_to_cart": {
+                            "message": "🗂️ Скопировать товары в корзину"
+                        }
+                    }
+                },
+                "displayed": {
+                    "message": "✅ Все заказы уже показаны"
+                }
+            },
+            "main_menu": {
+                "message": "Главное меню:"
+            }
+        },
+        "status": {
+            "for_payment": {
+                "text": "отправлен на оплату"
+            },
+            "completed": {
+                "text": "выполнен и отправлен"
+            },
+            "update_error": {
+                "message": "❌ Не удалось обновить статус заказа."
             }
         }
     })
@@ -485,12 +579,14 @@ class ContentConfig:
         cls, 
         full_name: str, 
         phone: str,
+        timezone: str,
         delivery_company: str,
         delivery_point_address
     ):
         return cls.common.user.profile.text.format(
             full_name=full_name if full_name else "-",
             phone=phone if phone else "-",
+            timezone=timezone if timezone else "-",
             delivery_company=delivery_company if delivery_company else "-",
             delivery_point_address=delivery_point_address if delivery_point_address else "-"
         )
@@ -582,6 +678,7 @@ class ContentConfig:
     def get_order_admin_new_text(
         cls,
         order_number: int,
+        created_at: str,
         tg_username: str,
         tg_full_name: str,
         full_name: str,
@@ -597,6 +694,7 @@ class ContentConfig:
             delivery_price_text = cls.order.admin.new.delivery_price.text.format(delivery_price=round(float(delivery_price), 2))
         return cls.order.admin.new.text.format(
             order_number=order_number,
+            created_at=created_at,
             tg_username=tg_username,
             tg_full_name=tg_full_name,
             full_name=full_name,
@@ -641,6 +739,8 @@ class ContentConfig:
     def get_order_user_send_for_payment_text(
         cls,
         order_number: int,
+        created_at: str,
+        status: str,
         products_text: str,
         delivery_price: float,
         total_with_delivery: float,
@@ -648,6 +748,8 @@ class ContentConfig:
     ):
         return cls.order.user.send.for_payment.text.format(
             order_number=order_number,
+            created_at=created_at,
+            status=status,
             products_text=products_text,
             delivery_price=round(float(delivery_price), 2),
             total_with_delivery=round(float(total_with_delivery), 2),
@@ -657,3 +759,57 @@ class ContentConfig:
     @classmethod
     def get_order_admin_new_send_for_payment_success_message(cls, order_number: int):
         return cls.order.admin.new.send.for_payment.success.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_user_send_receipt_text(
+        cls,
+        order_number: int,
+        created_at: str,
+        status: str,
+        products_text: str,
+        delivery_price: float,
+        total_with_delivery: float,
+        delivery_info: str
+    ):
+        return cls.order.user.send.receipt.text.format(
+            order_number=order_number,
+            created_at=created_at,
+            status=status,
+            products_text=products_text,
+            delivery_price=round(float(delivery_price), 2),
+            total_with_delivery=round(float(total_with_delivery), 2),
+            delivery_info=delivery_info
+        )
+        
+    @classmethod
+    def get_order_admin_new_send_receipt_success_message(cls, order_number: int):
+        return cls.order.admin.new.send.receipt.success.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_user_all_control_show_text(cls, number_orders: int):
+        return cls.order.user.all.control_show.text.format(number_orders=number_orders)
+    
+    @classmethod
+    def get_order_user_all_control_show_current_text(
+        cls,
+        order_number: int,
+        created_at: str,
+        status: str,
+        products_text: str,
+        delivery_price: float,
+        total_with_delivery: float,
+        delivery_company: str,
+        delivery_point_address: str,
+        delivery_info: str
+    ):
+        return cls.order.user.all.control_show.current.text.format(
+            order_number=order_number,
+            created_at=created_at,
+            status=status,
+            products_text=products_text,
+            delivery_price=round(float(delivery_price), 2),
+            total_with_delivery=round(float(total_with_delivery), 2),
+            delivery_company=delivery_company,
+            delivery_point_address=delivery_point_address,
+            delivery_info=delivery_info
+        )

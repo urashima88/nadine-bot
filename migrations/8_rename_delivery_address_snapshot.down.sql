@@ -1,0 +1,1 @@
+ALTER TABLE orders RENAME COLUMN delivery_point_address_snapshot TO delivery_address_snapshot;

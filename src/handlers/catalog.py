@@ -132,15 +132,15 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.control_show.next.message)
     @err_handler
-    def send_next_one(message):
-        logger.debug("send_next_one CALL")
+    def send_next_one_product(message):
+        logger.debug("send_next_one_product CALL")
         
         send_products(message, 1)
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.catalog.control_show.next5.message)
     @err_handler
-    def send_next_five(message):
-        logger.debug("send_next_five CALL")
+    def send_next_five_products(message):
+        logger.debug("send_next_five_products CALL")
         
         send_products(message, 5)
         
