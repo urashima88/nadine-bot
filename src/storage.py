@@ -603,6 +603,24 @@ class Storage:
                     RETURNING id
                 """, (status, order_id))
                 return cur.fetchone() is not None
+            
+    def get_order_info_for_notification(self, order_id: str) -> Optional[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        o.order_number,
+                        u.timezone,
+                        o.created_at,
+                        u.tg_user_id
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE o.id = %s::uuid
+                """, (order_id,))
+                row = cur.fetchone()
+                if row:
+                    return dict(row)
+                return None
     
     def close(self):
         self.pool.closeall()

@@ -342,7 +342,7 @@ class ContentConfig:
             "new": {
                 "text": (
                     "🆕 *НОВЫЙ ЗАКАЗ №{order_number}*\n\n"
-                    "📅 *Дата оформления заказа:* {created_at}\n\n"
+                    "📅 *Дата и время оформления заказа:* {created_at}\n\n"
                     "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
                     "📛 *Имя в Telegram:* {tg_full_name}\n"
                     "👤 *ФИО:* {full_name}\n"
@@ -350,12 +350,9 @@ class ContentConfig:
                     "🚚 *Служба доставки:* {delivery_company}\n"
                     "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
                     "📦 *Состав заказа:*\n\n{products_text}\n\n"
-                    "{delivery_price_text}"
+                    "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                     "💰 *Общая сумма:* {total_price} ₽\n"
                 ),
-                "delivery_price": {
-                    "text": "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
-                },
                 "set_delivery_price": {
                     "message": "💰 Ввести стоимость доставки",
                     "text": "Введите стоимость доставки:",
@@ -369,6 +366,9 @@ class ContentConfig:
                         "message": "❌ Ошибка при установке стоимости доставки. Попробуйте позже."
                     }
                 },
+                "delivery_info": {
+                    "text": "🚛 *Информация по доставке:\n*{delivery_info}"
+                },
                 "cancel": {
                     "message": "❌ Отменить заказ",
                     "success": {
@@ -377,13 +377,30 @@ class ContentConfig:
                     "reason": {
                         "text": "Введите причину отмены заказа для пользователя:",
                         "message": (
-                            "⚠️ К сожалению ваш заказ №{order_number} был отменён Nadine.\n" 
-                            "Причина: {cancel_reason}\n"
+                            "⚠️ К сожалению ваш заказ №{order_number} был отменён Nadine.\n\n"
+                            "📅 *Дата и время оформления заказа:* {created_at}\n\n"
+                            "Причина: {cancel_reason}\n\n"
                             "{order_text}\n"
                         )
                     },
                     "error": {
                         "message": "❌ Не удалось отменить заказ №{order_number}"
+                    },
+                    "user": {
+                        "text": (
+                            "⚠️ *ОТМЕНЁН ЗАКАЗ №{order_number}*\n\n"
+                            "📅 *Дата и время оформления заказа:* {created_at}\n\n"
+                            "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
+                            "📛 *Имя в Telegram:* {tg_full_name}\n"
+                            "👤 *ФИО:* {full_name}\n"
+                            "📱 *Телефон*: [{phone}](tel:{phone})\n"
+                            "🚚 *Служба доставки:* {delivery_company}\n"
+                            "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                            "📦 *Состав заказа:*\n\n{products_text}\n\n"
+                            "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
+                            "{delivery_info_text}\n"
+                            "💰 *Общая сумма:* {total_price} ₽\n"
+                        )
                     }
                 },
                 "send": {
@@ -436,7 +453,7 @@ class ContentConfig:
                 "for_payment": {
                     "text": (
                         "✅ *Благодарю вас за оформление заказа №{order_number}*\n\n"
-                        "📅 *Дата оформления заказа:* {created_at}\n"
+                        "📅 *Дата и время оформления заказа:* {created_at}\n"
                         "📌 *Статус заказа:* {status}\n\n"
                         "📦 *Ваш заказ:*\n{products_text}\n\n"
                         "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
@@ -449,12 +466,12 @@ class ContentConfig:
                 "receipt": {
                     "text": (
                         "🧾 *Чек и информация по доставке для заказа №{order_number}*\n\n"
-                        "📅 *Дата оформления заказа:* {created_at}\n"
+                        "📅 *Дата и время оформления заказа:* {created_at}\n"
                         "📌 *Статус заказа:* {status}\n\n"
                         "📦 *Ваш заказ:*\n{products_text}\n\n"
                         "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                         "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
-                        "🚛 *Информация по доставке:\n*{delivery_info}\n\n"
+                        "🚛 *Информация по доставке:\n*{delivery_info}\n"
                     )
                 }
             },
@@ -476,7 +493,7 @@ class ContentConfig:
                     "current": {
                         "text": (
                             "✅ *Заказ №{order_number}*\n\n"
-                            "📅 *Дата оформления заказа:* {created_at}\n"
+                            "📅 *Дата и время оформления заказа:* {created_at}\n"
                             "📌 *Статус заказа:* {status}\n\n"
                             "📦 *Ваш заказ:*\n{products_text}\n\n"
                             "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
@@ -502,6 +519,9 @@ class ContentConfig:
             }
         },
         "status": {
+            "review": {
+                "message": "на рассмотрении"
+            },
             "for_payment": {
                 "text": "отправлен на оплату"
             },
@@ -687,11 +707,8 @@ class ContentConfig:
         delivery_point_address: str,
         products_text: str,
         total_price: float,
-        delivery_price: float = None
+        delivery_price: float
     ):
-        delivery_price_text = ""
-        if delivery_price is not None:
-            delivery_price_text = cls.order.admin.new.delivery_price.text.format(delivery_price=round(float(delivery_price), 2))
         return cls.order.admin.new.text.format(
             order_number=order_number,
             created_at=created_at,
@@ -703,7 +720,7 @@ class ContentConfig:
             delivery_point_address=delivery_point_address,
             products_text=products_text,
             total_price=round(float(total_price), 2),
-            delivery_price_text=delivery_price_text
+            delivery_price=round(float(delivery_price), 2)
         )
     
     @classmethod
@@ -714,11 +731,13 @@ class ContentConfig:
     def get_order_admin_new_cancel_reason_message(
         cls, 
         order_number: int,
+        created_at: str,
         cancel_reason: str,
         order_text: str
     ):
         return cls.order.admin.new.cancel.reason.message.format(
             order_number=order_number,
+            created_at=created_at,
             cancel_reason=cancel_reason,
             order_text=order_text
         )
@@ -813,3 +832,46 @@ class ContentConfig:
             delivery_point_address=delivery_point_address,
             delivery_info=delivery_info
         )
+    
+    @classmethod
+    def get_order_admin_new_cancel_user_text(
+        cls,
+        order_number: int,
+        created_at: str,
+        tg_username: str,
+        tg_full_name: str,
+        full_name: str,
+        phone: str,
+        delivery_company: str,
+        delivery_point_address: str,
+        products_text: str,
+        total_price: float,
+        delivery_price: float,
+        delivery_info: str = None
+    ):
+        delivery_info_text = ""
+        if delivery_info is not None:
+            delivery_info_text = cls.order.admin.new.delivery_info.text.format(delivery_info=delivery_info)
+            
+        return cls.order.admin.new.cancel.user.text.format(
+            order_number=order_number,
+            created_at=created_at,
+            tg_username=tg_username,
+            tg_full_name=tg_full_name,
+            full_name=full_name,
+            phone=phone,
+            delivery_company=delivery_company,
+            delivery_point_address=delivery_point_address,
+            products_text=products_text,
+            total_price=round(float(total_price), 2),
+            delivery_price=round(float(delivery_price), 2),
+            delivery_info_text=delivery_info_text
+        )
+    
+    @classmethod
+    def get_order_user_cancel_success_message(cls, order_number: int):
+        return cls.order.user.cancel.success.message.format(order_number=order_number)
+    
+    @classmethod
+    def get_order_user_cancel_error_message(cls, order_number: int):
+        return cls.order.user.cancel.error.message.format(order_number=order_number)

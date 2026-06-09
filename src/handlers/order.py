@@ -25,7 +25,8 @@ from src.keyboards import (
     order_send_keyboard,
     order_user_control_show_mode_keyboard,
     main_menu_keyboard,
-    order_user_control_show_current_keyboard
+    order_user_control_show_current_review_status_keyboard,
+    order_user_control_show_current_not_review_status_keyboard
 )
 from src.utils.clean import delete_message
 from src.handlers.shared import (
@@ -285,7 +286,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 delivery_company,
                 delivery_point_address,
                 products_text,
-                total_price
+                total_price,
+                order["delivery_price"]
             )
             delete_order_session(tg_user_id)
             bot.send_message(
@@ -390,21 +392,28 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         bot.register_next_step_handler(
             message,
             execute_admin_cancel_order,
+            call.id,
             order_id
         )
         
-    def execute_admin_cancel_order(message, order_id: str):
+    def execute_admin_cancel_order(message, call_id, order_id: str):
         logger.debug("execute_admin_cancel_order CALL")
         
         cancel_reason = message.text.strip()
-        order_number = db.get_order_number_by_order_id(order_id)
+        
+        order_data_for_notification = db.get_order_info_for_notification(order_id)
+        order_number = order_data_for_notification["order_number"]
+        created_at = order_data_for_notification["created_at"]
+        timezone = order_data_for_notification["timezone"]
+        tg_user_id = order_data_for_notification["tg_user_id"]
+        
         success = db.cancel_order(order_id)
         if success:
-            bot.send_message(
-                message.chat.id, 
-                content_cfg.get_order_admin_new_cancel_success_message(order_number)
+            bot.answer_callback_query(
+                call_id, 
+                content_cfg.get_order_admin_new_cancel_success_message(order_number),
+                show_alert=False
             )
-            tg_user_id, timezone = db.get_tg_user_id_and_timezone(order_id)
             if tg_user_id:
                 header_text = content_cfg.order.place.final.header_text
                 order_text = get_order_content(
@@ -412,15 +421,25 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 )
                 bot.send_message(
                     tg_user_id, 
-                    content_cfg.get_order_admin_new_cancel_reason_message(order_number, cancel_reason, order_text),
+                    content_cfg.get_order_admin_new_cancel_reason_message(
+                        order_number, 
+                        format_local_datetime(created_at, timezone), 
+                        cancel_reason, 
+                        order_text
+                    ),
                     parse_mode="Markdown"
                 )
             else:
-                bot.send_message(message.chat.id, content_cfg.order.admin.new.user_not_found.message)
+                bot.answer_callback_query(
+                    message.chat.id, 
+                    content_cfg.order.admin.new.user_not_found.message,
+                    show_alert=False
+                )
         else:
-            bot.send_message(
-                message.chat.id, 
-                content_cfg.get_order_admin_new_cancel_error_message(order_number)
+            bot.answer_callback_query(
+                call_id, 
+                content_cfg.get_order_admin_new_cancel_error_message(order_number),
+                show_alert=False
             )
             
     @bot.callback_query_handler(func=lambda call: call.data.startswith("send_for_payment_"))
@@ -696,10 +715,15 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 delivery_info
             )   
             
+            if status == content_cfg.order.status.review.message:
+                keyboard = order_user_control_show_current_review_status_keyboard(content_cfg, order_id)
+            else:
+                keyboard = order_user_control_show_current_not_review_status_keyboard(content_cfg, order_id)
+            
             bot.send_message(
                 chat_id,
                 text=order_text,
-                reply_markup=order_user_control_show_current_keyboard(content_cfg, order_id),
+                reply_markup=keyboard,
                 parse_mode="Markdown"
             )
         
@@ -744,3 +768,50 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             content_cfg.order.user.main_menu.message,
             reply_markup=main_menu_keyboard(content_cfg)
         )
+        
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("user_cancel_order_"))
+    @err_handler
+    def user_cancel_order(call):
+        logger.debug("admin_cancel_order CALL")
+        
+        order_id = (call.data.split("_")[3])
+        
+        order = db.get_order(order_id)
+        
+        success = db.cancel_order(order_id)
+        if success:   
+            bot.answer_callback_query(
+                call.id, 
+                content_cfg.get_order_user_cancel_success_message(order["order_number"])
+            )
+            
+            admin_user_id = db.get_admin_user_id()
+            if admin_user_id:
+                products_details = get_order_products_details(order["products"])
+                products_text = "\n\n".join(products_details)
+
+                cancel_order_text = content_cfg.get_order_admin_new_cancel_user_text(
+                    order["order_number"],
+                    format_local_datetime(order["created_at"], order["timezone"]),
+                    order["tg_username"],
+                    order["tg_full_name"],
+                    order["full_name"],
+                    order["phone"],
+                    order["delivery_company"],
+                    order["delivery_point_address"],
+                    products_text,
+                    order["order_price"] + order["delivery_price"],
+                    order["delivery_price"],
+                    order["delivery_info"]
+                )
+                
+                bot.send_message(
+                    admin_user_id,
+                    cancel_order_text,
+                    parse_mode="Markdown"
+                )
+        else:
+            bot.answer_callback_query(
+                call.id, 
+                content_cfg.get_order_user_cancel_error_message(order["order_number"])
+            )
