@@ -500,13 +500,28 @@ class ContentConfig:
                             "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
                             "🚚 *Служба доставки:* {delivery_company}\n"
                             "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
-                            "🚛 *Информация по доставке:\n*{delivery_info}\n"
+                            "{delivery_info_text}\n"
                         ),
+                        "delivery_info": {
+                            "text": "🚛 *Информация по доставке:\n*{delivery_info}"
+                        },
                         "cancel": {
                             "message": "❌ Отменить заказ"
                         },
                         "copy_to_cart": {
-                            "message": "🗂️ Скопировать товары в корзину"
+                            "message": "🗂️ Скопировать товары в корзину",
+                            "error": {
+                                "message": "❌ Заказ не найден или не принадлежит вам"
+                            },
+                            "added": {
+                                "message": "✅ Добавлены артикулы: {added_text}"
+                            },
+                            "skipped": {
+                                "message": "⚠️ Не добавлены (превышен лимит): {skipped_text}"
+                            },
+                            "no_products": {
+                                "message": "❌ Нет товаров для добавления."
+                            }
                         }
                     }
                 },
@@ -527,6 +542,9 @@ class ContentConfig:
             },
             "completed": {
                 "text": "выполнен и отправлен"
+            },
+            "canceled": {
+                "text": "отменён"
             },
             "update_error": {
                 "message": "❌ Не удалось обновить статус заказа."
@@ -821,6 +839,10 @@ class ContentConfig:
         delivery_point_address: str,
         delivery_info: str
     ):
+        delivery_info_text = ""
+        if delivery_info is not None:
+            delivery_info_text = cls.order.user.all.control_show.current.delivery_info.text.format(delivery_info=delivery_info)
+        
         return cls.order.user.all.control_show.current.text.format(
             order_number=order_number,
             created_at=created_at,
@@ -830,7 +852,7 @@ class ContentConfig:
             total_with_delivery=round(float(total_with_delivery), 2),
             delivery_company=delivery_company,
             delivery_point_address=delivery_point_address,
-            delivery_info=delivery_info
+            delivery_info_text=delivery_info_text
         )
     
     @classmethod
@@ -875,3 +897,13 @@ class ContentConfig:
     @classmethod
     def get_order_user_cancel_error_message(cls, order_number: int):
         return cls.order.user.cancel.error.message.format(order_number=order_number)
+    
+    @classmethod
+    def order_user_all_control_show_current_copy_to_cart_added_message(cls, added: List[str]):
+        added_text = ', '.join(map(str, added))
+        return cls.order.user.all.control_show.current.copy_to_cart.added.message.format(added_text=added_text)
+    
+    @classmethod
+    def order_user_all_control_show_current_copy_to_cart_skipped_message(cls, skipped: List[str]):
+        skipped_text = ', '.join(map(str, skipped))
+        return cls.order.user.all.control_show.current.copy_to_cart.skipped.message.format(skipped_text=skipped_text)

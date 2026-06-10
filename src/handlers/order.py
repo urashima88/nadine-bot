@@ -25,8 +25,8 @@ from src.keyboards import (
     order_send_keyboard,
     order_user_control_show_mode_keyboard,
     main_menu_keyboard,
-    order_user_control_show_current_review_status_keyboard,
-    order_user_control_show_current_not_review_status_keyboard
+    order_user_show_current_review_status_keyboard,
+    order_user_show_current_not_review_status_keyboard
 )
 from src.utils.clean import delete_message
 from src.handlers.shared import (
@@ -716,9 +716,9 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             )   
             
             if status == content_cfg.order.status.review.message:
-                keyboard = order_user_control_show_current_review_status_keyboard(content_cfg, order_id)
+                keyboard = order_user_show_current_review_status_keyboard(content_cfg, order_id)
             else:
-                keyboard = order_user_control_show_current_not_review_status_keyboard(content_cfg, order_id)
+                keyboard = order_user_show_current_not_review_status_keyboard(content_cfg, order_id)
             
             bot.send_message(
                 chat_id,
@@ -772,7 +772,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
     @bot.callback_query_handler(func=lambda call: call.data.startswith("user_cancel_order_"))
     @err_handler
     def user_cancel_order(call):
-        logger.debug("admin_cancel_order CALL")
+        logger.debug("user_cancel_order CALL")
         
         order_id = (call.data.split("_")[3])
         
@@ -784,7 +784,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 call.id, 
                 content_cfg.get_order_user_cancel_success_message(order["order_number"])
             )
-            
+        
             admin_user_id = db.get_admin_user_id()
             if admin_user_id:
                 products_details = get_order_products_details(order["products"])
@@ -815,3 +815,125 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 call.id, 
                 content_cfg.get_order_user_cancel_error_message(order["order_number"])
             )
+            
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("show_user_cancel_order_"))
+    @err_handler
+    def show_user_cancel_order(call):
+        logger.debug("show_user_cancel_order CALL")
+        
+        order_id = (call.data.split("_")[4])
+        
+        order = db.get_order(order_id)
+        order_number = order["order_number"]
+        
+        success = db.cancel_order(order_id)
+        if success:   
+            bot.answer_callback_query(
+                call.id, 
+                content_cfg.get_order_user_cancel_success_message(order_number)
+            )
+            
+            current_order_products_text, total = get_products_text_and_total_price(order["products"], content_cfg, logger)    
+            delivery_price = order["delivery_price"]
+            total_with_delivery = total + float(delivery_price)
+            delivery_company = order["delivery_company"]
+            delivery_point_address = order["delivery_point_address"]
+            delivery_info = order["delivery_info"]
+            created_at = order["created_at"]
+            timezone = order["timezone"]
+            status = content_cfg.order.status.canceled.text
+            
+            formatted_created_at = format_local_datetime(created_at, timezone)
+            
+            order_text = content_cfg.get_order_user_all_control_show_current_text(
+                order_number,
+                formatted_created_at,
+                status,
+                current_order_products_text,
+                delivery_price,
+                total_with_delivery,
+                delivery_company,
+                delivery_point_address,
+                delivery_info
+            )   
+            
+            if status == content_cfg.order.status.review.message:
+                keyboard = order_user_show_current_review_status_keyboard(content_cfg, order_id)
+            else:
+                keyboard = order_user_show_current_not_review_status_keyboard(content_cfg, order_id)
+            
+            bot.edit_message_text(
+                order_text,
+                call.message.chat.id,
+                call.message.id,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
+            
+            admin_user_id = db.get_admin_user_id()
+            if admin_user_id:
+                products_details = get_order_products_details(order["products"])
+                products_text = "\n\n".join(products_details)
+
+                cancel_order_text = content_cfg.get_order_admin_new_cancel_user_text(
+                    order_number,
+                    formatted_created_at,
+                    order["tg_username"],
+                    order["tg_full_name"],
+                    order["full_name"],
+                    order["phone"],
+                    delivery_company,
+                    delivery_point_address,
+                    products_text,
+                    total_with_delivery,
+                    delivery_price,
+                    delivery_info
+                )
+                
+                bot.send_message(
+                    admin_user_id,
+                    cancel_order_text,
+                    parse_mode="Markdown"
+                )
+        else:
+            bot.answer_callback_query(
+                call.id, 
+                content_cfg.get_order_user_cancel_error_message(order_number)
+            )
+            
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("copy_to_cart_"))
+    @err_handler
+    def copy_to_cart(call):
+        logger.debug("copy_to_cart CALL")
+        
+        order_id = (call.data.split("_")[3])
+        tg_user_id = call.from_user.id
+        
+        result = db.copy_order_to_cart(tg_user_id, order_id)
+        
+        if result['error']:
+            bot.answer_callback_query(
+                call.id,
+                content_cfg.order.user.all.control_show.current.copy_to_cart.error.message,
+                show_alert=False
+            )
+            return
+        
+        added = result["added"]
+        skipped = result["skipped"]
+        
+        response = []
+        if added:
+            response.append(content_cfg.order_user_all_control_show_current_copy_to_cart_added_message(added))
+        if skipped:
+            response.append(content_cfg.order_user_all_control_show_current_copy_to_cart_skipped_message(skipped))
+            
+        if not response:
+            response.append(content_cfg.order.user.all.control_show.current.copy_to_cart.no_products)
+            
+        bot.answer_callback_query(
+            call.id, 
+            "\n".join(response),
+            show_alert=False
+        )
+        

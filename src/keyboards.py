@@ -156,16 +156,16 @@ def order_user_control_show_mode_keyboard(content_cfg: ContentConfig):
     markup.add(*buttons)
     return markup
 
-def order_user_control_show_current_review_status_keyboard(content_cfg: ContentConfig, order_id: str):
-    markup = types.InlineKeyboardMarkup(row_width=2)
+def order_user_show_current_review_status_keyboard(content_cfg: ContentConfig, order_id: str):
+    markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
         types.InlineKeyboardButton(content_cfg.order.user.all.control_show.current.copy_to_cart.message, callback_data=f"copy_to_cart_{order_id}"),
-        types.InlineKeyboardButton(content_cfg.order.user.all.control_show.current.cancel.message, callback_data=f"user_cancel_order_{order_id}")
+        types.InlineKeyboardButton(content_cfg.order.user.all.control_show.current.cancel.message, callback_data=f"show_user_cancel_order_{order_id}")
     ]
     markup.add(*buttons)
     return markup
 
-def order_user_control_show_current_not_review_status_keyboard(content_cfg: ContentConfig, order_id: str):
+def order_user_show_current_not_review_status_keyboard(content_cfg: ContentConfig, order_id: str):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
         types.InlineKeyboardButton(content_cfg.order.user.all.control_show.current.copy_to_cart.message, callback_data=f"copy_to_cart_{order_id}")

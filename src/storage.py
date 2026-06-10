@@ -621,6 +621,68 @@ class Storage:
                 if row:
                     return dict(row)
                 return None
+            
+    def copy_order_to_cart(self, tg_user_id: int, order_id: str) -> Dict[str, Any]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 1 FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    WHERE o.id = %s::uuid AND u.tg_user_id = %s
+                """, (order_id, tg_user_id))
+                row = cur.fetchone()
+                if not row:
+                    return {'added': [], 'skipped': [], 'error': True}
+
+                cur.execute("""
+                    WITH order_items AS (
+                        SELECT 
+                            op.product_id,
+                            op.quantity,
+                            p.article_number,
+                            p.prod_limit,
+                            COALESCE(c.quantity, 0) AS current_cart_qty
+                        FROM order_products op
+                        JOIN products p ON op.product_id = p.id
+                        LEFT JOIN cart c ON c.product_id = p.id AND c.user_id = (SELECT id FROM users WHERE tg_user_id = %s)
+                        WHERE op.order_id = %s::uuid
+                    ),
+                    validated AS (
+                        SELECT 
+                            product_id,
+                            quantity,
+                            article_number,
+                            current_cart_qty,
+                            CASE 
+                                WHEN prod_limit IS NULL OR (current_cart_qty + quantity) <= prod_limit THEN true
+                                ELSE false
+                            END AS within_limit
+                        FROM order_items
+                    ),
+                    inserted AS (
+                        INSERT INTO cart (user_id, product_id, quantity)
+                        SELECT u.id, v.product_id, v.quantity
+                        FROM validated v
+                        CROSS JOIN users u
+                        WHERE u.tg_user_id = %s AND v.within_limit = true
+                        ON CONFLICT (user_id, product_id) DO UPDATE
+                        SET quantity = cart.quantity + EXCLUDED.quantity,
+                            updated_at = NOW()
+                        RETURNING product_id
+                    )
+                    SELECT 
+                        array_agg(DISTINCT article_number) FILTER (WHERE within_limit = true) AS added,
+                        array_agg(DISTINCT article_number) FILTER (WHERE within_limit = false) AS skipped
+                    FROM validated;
+                """, (tg_user_id, order_id, tg_user_id))
+                row = cur.fetchone()
+                if row:
+                    return {
+                        'added': row['added'] or [],
+                        'skipped': row['skipped'] or [],
+                        'error': False
+                    }
+                return {'added': [], 'skipped': [], 'error': False}
     
     def close(self):
         self.pool.closeall()
