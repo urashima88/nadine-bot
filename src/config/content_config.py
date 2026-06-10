@@ -154,8 +154,8 @@ class ContentConfig:
             "contacts": {
                 "text": (
                     "📞 *Контакты Nadine:*\n\n"
-                    "👤 Telegram: [@{tg_username}](https://t.me/{tg_username})\n"
-                    "📱 Телефон: [{phone}](tel:{phone})"
+                    "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
+                    "📱 *Телефон:* [{phone}](tel:{phone})"
                 ),
                 "message": "📞 Связаться с Nadine"
             },
@@ -167,11 +167,47 @@ class ContentConfig:
                 "message": "ℹ️ О Nadine"
             },
             "user_data": {
-                "message": "🧑‍💻 Данные пользователей"
+                "all": {
+                    "message": "🧑‍💻 Данные пользователей",
+                    "is_empty": {
+                        "message": "Нет пользователей"
+                    },
+                    "control_show": {
+                        "text": (
+                            "Всего пользователей: {number_users}\n"
+                            "Используйте кнопки внизу для навигации."
+                        ),
+                        "next": {"message": "➡️ Следующий пользователь"},
+                        "next5": {"message": "5️⃣ Следующие 5 пользователей"},
+                        "go_back_to_main_menu": {"message": "◀️ Возврат в главное меню"},
+                        "session_not_found": {
+                            "message": "⚠️ Сессия не найдена. Нажмите '🧑‍💻 Данные пользователей'"
+                        },
+                        "current": {
+                            "text": (
+                                "👤 *Личные данные*\n\n"
+                                "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
+                                "📇 *Имя в Telegram:* {tg_full_name}\n"
+                                "📛 *ФИО:* {full_name}\n"
+                                "📱 *Телефон:* {phone}\n"
+                                "🌐 *Часовой пояс:* {timezone}\n"
+                                "🚚 *Служба доставки:* {delivery_company}\n"
+                                "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                                "📅 *Дата регистрации:* {created_at}\n"
+                            )
+                        }
+                    },
+                    "displayed": {
+                        "message": "✅ Все пользователи уже показаны"
+                    }
+                },
+                "main_menu": {
+                    "message": "Главное меню:"
+                }
             },
             "personal_data": {
                 "message": "👤 Личные данные Nadine"
-            }
+            },
         },
         "user": {
             "personal_data": {
@@ -269,6 +305,14 @@ class ContentConfig:
         },
         "error": {
             "message": "⚠️ Непредвиденная ошибка. Повторите позже."
+        },
+        "main_menu": {
+            "admin": {
+                "message": "Главное меню:"
+            },
+            "user": {
+                "message": "Главное меню:"
+            }
         }
     })
     
@@ -358,8 +402,8 @@ class ContentConfig:
                     "🆕 *НОВЫЙ ЗАКАЗ №{order_number}*\n\n"
                     "📅 *Дата и время оформления заказа:* {created_at}\n\n"
                     "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
-                    "📛 *Имя в Telegram:* {tg_full_name}\n"
-                    "👤 *ФИО:* {full_name}\n"
+                    "📇 *Имя в Telegram:* {tg_full_name}\n"
+                    "📛 *ФИО:* {full_name}\n"
                     "📱 *Телефон*: [{phone}](tel:{phone})\n"
                     "🚚 *Служба доставки:* {delivery_company}\n"
                     "📍 *Адрес пункта выдачи:* {delivery_point_address}\n\n"
@@ -405,8 +449,8 @@ class ContentConfig:
                             "⚠️ *ОТМЕНЁН ЗАКАЗ №{order_number}*\n\n"
                             "📅 *Дата и время оформления заказа:* {created_at}\n\n"
                             "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
-                            "📛 *Имя в Telegram:* {tg_full_name}\n"
-                            "👤 *ФИО:* {full_name}\n"
+                            "📇 *Имя в Telegram:* {tg_full_name}\n"
+                            "📛 *ФИО:* {full_name}\n"
                             "📱 *Телефон*: [{phone}](tel:{phone})\n"
                             "🚚 *Служба доставки:* {delivery_company}\n"
                             "📍 *Адрес пункта выдачи:* {delivery_point_address}\n\n"
@@ -481,8 +525,8 @@ class ContentConfig:
                             "📅 *Дата и время оформления заказа:* {created_at}\n"
                             "📌 *Статус заказа:* {status}\n\n"
                             "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
-                            "📛 *Имя в Telegram:* {tg_full_name}\n"
-                            "👤 *ФИО:* {full_name}\n"
+                            "📇 *Имя в Telegram:* {tg_full_name}\n"
+                            "📛 *ФИО:* {full_name}\n"
                             "📱 *Телефон*: [{phone}](tel:{phone})\n\n"
                             "📦 *Состав заказа:*\n{products_text}\n\n"
                             "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
@@ -1022,4 +1066,31 @@ class ContentConfig:
             delivery_company=delivery_company,
             delivery_point_address=delivery_point_address,
             delivery_info_text=delivery_info_text
+        )
+        
+    @classmethod
+    def get_common_admin_user_data_all_control_show_text(cls, number_users: int):
+        return cls.common.admin.user_data.all.control_show.text.format(number_users=number_users)
+    
+    @classmethod
+    def get_common_admin_user_data_all_control_show_current_text(
+        cls,
+        tg_username: str,
+        tg_full_name: str,
+        full_name: str,
+        phone: str,
+        timezone: str,
+        delivery_company: str,
+        delivery_point_address: str,
+        created_at: str
+    ):
+        return cls.common.admin.user_data.all.control_show.current.text.format(
+            tg_username=tg_username,
+            tg_full_name=tg_full_name,
+            full_name=full_name,
+            phone=phone,
+            timezone=timezone,
+            delivery_company=delivery_company,
+            delivery_point_address=delivery_point_address,
+            created_at=created_at
         )

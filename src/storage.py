@@ -734,3 +734,23 @@ class Storage:
                 """)
                 rows = cur.fetchall()
                 return [dict(row) for row in rows]
+            
+    def get_all_users(self) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        u.tg_username,
+                        u.tg_full_name,
+                        u.full_name,
+                        u.phone,
+                        u.timezone,
+                        COALESCE(d.company, '') AS delivery_company,
+                        COALESCE(d.address, '') AS delivery_point_address,
+                        u.created_at
+                    FROM users u
+                    LEFT JOIN delivery_points d ON u.id = d.user_id
+                    ORDER BY u.created_at DESC
+                """)
+                rows = cur.fetchall()
+                return [dict(row) for row in rows]

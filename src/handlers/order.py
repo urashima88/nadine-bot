@@ -785,8 +785,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.order.user.all.control_show.go_back_to_main_menu.message)
     @err_handler
-    def user_go_back_to_main_menu(message):
-        logger.debug("user_go_back_to_main_menu CALL")
+    def user_order_control_show_go_back_to_main_menu(message):
+        logger.debug("user_order_control_show_go_back_to_main_menu CALL")
         
         user_id = message.from_user.id
         user_order_show_delete_session(user_id)
@@ -1099,8 +1099,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.order.admin.all.control_show.go_back_to_main_menu.message)
     @err_handler
-    def admin_go_back_to_main_menu(message):
-        logger.debug("admin_go_back_to_main_menu CALL")
+    def admin_order_control_show_go_back_to_main_menu(message):
+        logger.debug("admin_order_control_show_go_back_to_main_menu CALL")
         
         user_id = message.from_user.id
         admin_order_show_delete_session(user_id)
