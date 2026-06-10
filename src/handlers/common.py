@@ -8,7 +8,8 @@ from src.config.config import Config
 from src.config.content_config import ContentConfig
 from src.keyboards import (
     main_menu_keyboard,
-    common_user_profile_edit_keyboard
+    common_user_profile_edit_keyboard,
+    admin_main_menu_keyboard
 )
 from src.utils.wrappers import error_handler
 from src.utils.clean import delete_message
@@ -28,10 +29,17 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         db.register_user(tg_user_id, tg_username, tg_full_name)
         
         welcome_text = content_cfg.get_common_welcome_message(tg_full_name)
+        
+        is_admin = db.is_admin(tg_user_id)
+        if is_admin:
+            keyboard = admin_main_menu_keyboard(content_cfg)
+        else:
+            keyboard = main_menu_keyboard(content_cfg)
+        
         bot.send_message(
             message.chat.id, 
             welcome_text, 
-            reply_markup=main_menu_keyboard(content_cfg)
+            reply_markup=keyboard
         )
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.common.admin.contacts.message)

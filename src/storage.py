@@ -19,6 +19,10 @@ class Storage:
         self.pool = pool.SimpleConnectionPool(min_conn, max_conn, **conn_args)
         self.logger.info("PostgreSQL connection pool created")
         
+    def close(self):
+        self.pool.closeall()
+        self.logger.info("PostgreSQL connection pool closed")
+        
     @contextmanager
     def _get_connection(self):
         conn = self.pool.getconn()
@@ -42,7 +46,7 @@ class Storage:
             with self._get_cursor(conn) as cur:
                 cur.execute("""
                     INSERT INTO users (tg_user_id, tg_username, tg_full_name)
-                    VALUES (%s, %s, %s, %s)
+                    VALUES (%s, %s, %s)
                     ON CONFLICT (tg_user_id) DO UPDATE
                     SET tg_username = COALESCE(EXCLUDED.tg_username, users.tg_username),
                         tg_full_name = COALESCE(EXCLUDED.tg_full_name, users.tg_full_name),
@@ -683,7 +687,50 @@ class Storage:
                         'error': False
                     }
                 return {'added': [], 'skipped': [], 'error': False}
-    
-    def close(self):
-        self.pool.closeall()
-        self.logger.info("PostgreSQL connection pool closed")
+            
+    def get_all_orders(self) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        o.id AS order_id,
+                        o.order_number,
+                        u.tg_user_id,
+                        u.tg_username,
+                        u.tg_full_name,
+                        u.full_name,
+                        u.phone,
+                        u.timezone,
+                        o.delivery_company_snapshot AS delivery_company,
+                        o.delivery_point_address_snapshot AS delivery_point_address,
+                        o.order_price,
+                        o.delivery_price,
+                        o.status,
+                        o.created_at,
+                        o.delivery_info,
+                        COALESCE(
+                            (SELECT json_agg(
+                                json_build_object(
+                                    'name', p.name,
+                                    'article_number', p.article_number,
+                                    'quantity', op.quantity,
+                                    'price_at_order', op.price_at_order,
+                                    'category', p.category,
+                                    'materials', COALESCE(
+                                        (SELECT string_agg(m.name, ', ') 
+                                        FROM product_materials pm 
+                                        JOIN materials m ON pm.material_id = m.id 
+                                        WHERE pm.product_id = p.id), ''),
+                                    'production_time', p.production_time
+                                )
+                            )
+                            FROM order_products op
+                            JOIN products p ON op.product_id = p.id
+                            WHERE op.order_id = o.id
+                        ), '[]'::json) AS products
+                    FROM orders o
+                    JOIN users u ON o.user_id = u.id
+                    ORDER BY o.created_at DESC
+                """)
+                rows = cur.fetchall()
+                return [dict(row) for row in rows]

@@ -17,6 +17,16 @@ from src.states.user_order_show_session import (
     user_order_show_get_session,
     user_order_show_delete_session
 )
+from src.states.admin_order_show_session import (
+    admin_order_show_set_session,
+    admin_order_show_get_session,
+    admin_order_show_delete_session
+)
+from src.states.admin_cancel_order_session import (
+    admin_cancel_order_set_session,
+    admin_cancel_order_get_session,
+    admin_cancel_order_delete_session
+)
 from src.keyboards import (
     order_user_profile_field_keyboard,
     order_final_summary_keyboard,
@@ -26,7 +36,10 @@ from src.keyboards import (
     order_user_control_show_mode_keyboard,
     main_menu_keyboard,
     order_user_show_current_review_status_keyboard,
-    order_user_show_current_not_review_status_keyboard
+    order_user_show_current_not_review_status_keyboard,
+    order_admin_control_show_mode_keyboard,
+    order_admin_show_current_review_status_keyboard,
+    admin_main_menu_keyboard
 )
 from src.utils.clean import delete_message
 from src.handlers.shared import (
@@ -387,16 +400,30 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         order_id = (call.data.split("_")[3])
         
-        prompt = content_cfg.order.admin.new.cancel.reason.text
-        message = bot.send_message(call.message.chat.id, prompt)
-        bot.register_next_step_handler(
-            message,
-            execute_admin_cancel_order,
-            call.id,
-            order_id
-        )
+        session = admin_cancel_order_get_session(call.from_user.id)
+        if session:
+            if session["order_id"] != order_id:
+                bot.send_message(
+                    call.message.chat.id,
+                    content_cfg.order.admin.new.cancel.not_completed_yet.other.message
+                )
+            else:
+                bot.send_message(
+                    call.message.chat.id,
+                    content_cfg.order.admin.new.cancel.not_completed_yet.current.message
+                )
+        else:
+            prompt = content_cfg.order.admin.new.cancel.reason.text
+            message = bot.send_message(call.message.chat.id, prompt)
+            admin_cancel_order_set_session(call.from_user.id, order_id)
+            bot.register_next_step_handler(
+                message,
+                execute_admin_cancel_order,
+                call,
+                order_id
+            )
         
-    def execute_admin_cancel_order(message, call_id, order_id: str):
+    def execute_admin_cancel_order(message, call, order_id: str):
         logger.debug("execute_admin_cancel_order CALL")
         
         cancel_reason = message.text.strip()
@@ -409,10 +436,9 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         success = db.cancel_order(order_id)
         if success:
-            bot.answer_callback_query(
-                call_id, 
-                content_cfg.get_order_admin_new_cancel_success_message(order_number),
-                show_alert=False
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.get_order_admin_new_cancel_success_message(order_number)
             )
             if tg_user_id:
                 header_text = content_cfg.order.place.final.header_text
@@ -430,17 +456,18 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                     parse_mode="Markdown"
                 )
             else:
-                bot.answer_callback_query(
+                bot.send_message(
                     message.chat.id, 
-                    content_cfg.order.admin.new.user_not_found.message,
-                    show_alert=False
+                    content_cfg.order.admin.new.user_not_found.message
                 )
         else:
-            bot.answer_callback_query(
-                call_id, 
-                content_cfg.get_order_admin_new_cancel_error_message(order_number),
-                show_alert=False
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.get_order_admin_new_cancel_error_message(order_number)
             )
+        
+        admin_cancel_order_delete_session(call.from_user.id)
+            
             
     @bot.callback_query_handler(func=lambda call: call.data.startswith("send_for_payment_"))
     @err_handler
@@ -657,9 +684,9 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             reply_markup=order_user_control_show_mode_keyboard(content_cfg)
         )
         
-        send_next_orders(message.chat.id, tg_user_id, count=1)
+        user_send_next_orders(message.chat.id, tg_user_id, count=1)
         
-    def send_all_orders_displayed_message(chat_id: int, user_id: int):
+    def user_send_all_orders_displayed_message(chat_id: int, user_id: int):
         logger.debug("send_all_orders_displayed CALL")
         
         bot.send_message(chat_id, content_cfg.order.user.all.displayed.message)
@@ -670,8 +697,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         )
         user_order_show_delete_session(user_id)
         
-    def send_next_orders(chat_id: int, user_id: int, count: int):
-        logger.debug("send_next_orders CALL")
+    def user_send_next_orders(chat_id: int, user_id: int, count: int):
+        logger.debug("user_send_next_orders CALL")
         
         session = user_order_show_get_session(user_id)
         if not session:
@@ -683,7 +710,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         total = session["total"]
         
         if sent >= total:
-            send_all_orders_displayed_message(chat_id, user_id)
+            user_send_all_orders_displayed_message(chat_id, user_id)
             return
         
         to_send = min(count, total-sent)
@@ -729,10 +756,10 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         session["sent"] = sent + to_send
         if session["sent"] >= total:
-            send_all_orders_displayed_message(chat_id, user_id)
+            user_send_all_orders_displayed_message(chat_id, user_id)
             
-    def send_orders(message, count):
-        logger.debug("send_orders CALL")
+    def user_send_orders(message, count):
+        logger.debug("user_send_orders CALL")
         
         user_id = message.from_user.id
         session = user_order_show_get_session(user_id)
@@ -740,26 +767,26 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             bot.send_message(message.chat.id, content_cfg.order.user.all.control_show.session_not_found.message)
             return
         
-        send_next_orders(message.chat.id, user_id, count)
+        user_send_next_orders(message.chat.id, user_id, count)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.order.user.all.control_show.next.message)
     @err_handler
-    def send_next_one_order(message):
-        logger.debug("send_next_one CALL")
+    def user_send_next_one_order(message):
+        logger.debug("user_send_next_one_order CALL")
         
-        send_orders(message, 1)
+        user_send_orders(message, 1)
     
     @bot.message_handler(func=lambda message: message.text == content_cfg.order.user.all.control_show.next5.message)
     @err_handler
-    def send_next_five_orders(message):
-        logger.debug("send_next_five_orders CALL")
+    def user_send_next_five_orders(message):
+        logger.debug("user_send_next_five_orders CALL")
         
-        send_orders(message, 5)
+        user_send_orders(message, 5)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.order.user.all.control_show.go_back_to_main_menu.message)
     @err_handler
-    def go_back_to_main_menu(message):
-        logger.debug("go_back_to_main_menu CALL")
+    def user_go_back_to_main_menu(message):
+        logger.debug("user_go_back_to_main_menu CALL")
         
         user_id = message.from_user.id
         user_order_show_delete_session(user_id)
@@ -818,8 +845,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             
     @bot.callback_query_handler(func=lambda call: call.data.startswith("show_user_cancel_order_"))
     @err_handler
-    def show_user_cancel_order(call):
-        logger.debug("show_user_cancel_order CALL")
+    def control_show_user_cancel_order(call):
+        logger.debug("control_show_user_cancel_order CALL")
         
         order_id = (call.data.split("_")[4])
         
@@ -937,3 +964,266 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             show_alert=False
         )
         
+    @bot.message_handler(func=lambda message: message.text == content_cfg.order.admin.all.message)
+    @err_handler
+    def admin_show_orders(message):
+        logger.debug("admin_show_orders CALL")
+
+        tg_user_id = message.from_user.id
+        orders = db.get_all_orders()
+        
+        if not orders:
+            bot.send_message(message.chat.id, content_cfg.order.admin.all.is_empty.message)
+            return
+        
+        admin_order_show_set_session(tg_user_id, orders)
+        
+        order_control_show_text = content_cfg.get_order_admin_all_control_show_text(len(orders))
+        
+        bot.send_message(
+            message.chat.id,
+            order_control_show_text,
+            parse_mode="Markdown",
+            reply_markup=order_admin_control_show_mode_keyboard(content_cfg)
+        )
+        
+        admin_send_next_orders(message.chat.id, tg_user_id, count=1)
+        
+    def admin_send_next_orders(chat_id: int, user_id: int, count: int):
+        logger.debug("admin_send_next_orders CALL")
+        
+        session = admin_order_show_get_session(user_id)
+        if not session:
+            bot.send_message(chat_id, content_cfg.order.admin.all.control_show.session_not_found.message)
+            return
+        
+        orders = session["orders"]
+        sent = session["sent"]
+        total = session["total"]
+        
+        if sent >= total:
+            admin_send_all_orders_displayed_message(chat_id, user_id)
+            return
+        
+        to_send = min(count, total-sent)
+        for i in range(to_send):
+            idx = sent + i
+            order = orders[idx]
+            
+            order_id = order["order_id"]
+            order_number = order["order_number"]
+            
+            tg_username = order["tg_username"]
+            tg_full_name = order["tg_full_name"]
+            full_name = order["full_name"]
+            phone = order["phone"]
+            
+            products_details = get_order_products_details(order["products"])
+            products_text = "\n\n".join(products_details)  
+            
+            delivery_price = order["delivery_price"]
+            total_with_delivery = float(order["order_price"]) + float(delivery_price)
+            delivery_company = order["delivery_company"]
+            delivery_point_address = order["delivery_point_address"]
+            delivery_info = order["delivery_info"]
+            created_at = order["created_at"]
+            timezone = order["timezone"]
+            status = order["status"]
+            
+            order_text = content_cfg.get_order_admin_all_control_show_current_text(
+                order_number,
+                format_local_datetime(created_at, timezone),
+                status,
+                tg_username,
+                tg_full_name,
+                full_name,
+                phone,
+                products_text,
+                delivery_price,
+                total_with_delivery,
+                delivery_company,
+                delivery_point_address,
+                delivery_info
+            )   
+            
+            keyboard = None
+            if status == content_cfg.order.status.review.message:
+                keyboard = order_admin_show_current_review_status_keyboard(content_cfg, order_id)
+            
+            bot.send_message(
+                chat_id,
+                text=order_text,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
+        
+        session["sent"] = sent + to_send
+        if session["sent"] >= total:
+            admin_send_all_orders_displayed_message(chat_id, user_id)
+            
+    def admin_send_all_orders_displayed_message(chat_id: int, user_id: int):
+        logger.debug("admin_send_all_orders_displayed CALL")
+        
+        bot.send_message(chat_id, content_cfg.order.admin.all.displayed.message)
+        bot.send_message(
+            chat_id, 
+            content_cfg.order.admin.main_menu.message, 
+            reply_markup=admin_main_menu_keyboard(content_cfg)
+        )
+        admin_order_show_delete_session(user_id)
+        
+    def admin_send_orders(message, count):
+        logger.debug("admin_send_orders CALL")
+        
+        user_id = message.from_user.id
+        session = admin_order_show_get_session(user_id)
+        if not session:
+            bot.send_message(message.chat.id, content_cfg.order.admin.all.control_show.session_not_found.message)
+            return
+        
+        admin_send_next_orders(message.chat.id, user_id, count)
+        
+    @bot.message_handler(func=lambda message: message.text == content_cfg.order.admin.all.control_show.next.message)
+    @err_handler
+    def admin_send_next_one_order(message):
+        logger.debug("admin_send_next_one_order CALL")
+        
+        admin_send_orders(message, 1)
+    
+    @bot.message_handler(func=lambda message: message.text == content_cfg.order.admin.all.control_show.next5.message)
+    @err_handler
+    def admin_send_next_five_orders(message):
+        logger.debug("admin_send_next_five_orders CALL")
+        
+        admin_send_orders(message, 5)
+        
+    @bot.message_handler(func=lambda message: message.text == content_cfg.order.admin.all.control_show.go_back_to_main_menu.message)
+    @err_handler
+    def admin_go_back_to_main_menu(message):
+        logger.debug("admin_go_back_to_main_menu CALL")
+        
+        user_id = message.from_user.id
+        admin_order_show_delete_session(user_id)
+        bot.send_message(
+            message.chat.id,
+            content_cfg.order.admin.main_menu.message,
+            reply_markup=admin_main_menu_keyboard(content_cfg)
+        )
+        
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("show_admin_cancel_order_"))
+    @err_handler
+    def control_show_admin_cancel_order(call):
+        logger.debug("control_show_admin_cancel_order CALL")
+        
+        bot.answer_callback_query(call.id)
+        
+        order_id = (call.data.split("_")[4])
+        
+        session = admin_cancel_order_get_session(call.from_user.id)
+        if session:
+            if session["order_id"] != order_id:
+                bot.send_message(
+                    call.message.chat.id,
+                    content_cfg.order.admin.new.cancel.not_completed_yet.other.message
+                )
+            else:
+                bot.send_message(
+                    call.message.chat.id,
+                    content_cfg.order.admin.new.cancel.not_completed_yet.current.message
+                )
+        else:
+            prompt = content_cfg.order.admin.new.cancel.reason.text
+            message = bot.send_message(call.message.chat.id, prompt)
+            admin_cancel_order_set_session(call.from_user.id, order_id)
+            bot.register_next_step_handler(
+                message,
+                control_show_execute_admin_cancel_order,
+                call,
+                order_id
+            )
+        
+    def control_show_execute_admin_cancel_order(message, call, order_id: str):
+        logger.debug("control_show_execute_admin_cancel_order CALL")
+        
+        cancel_reason = message.text.strip()
+        
+        order_data_for_notification = db.get_order_info_for_notification(order_id)
+        order_number = order_data_for_notification["order_number"]
+        tg_user_id = order_data_for_notification["tg_user_id"]
+        
+        success = db.cancel_order(order_id)
+        if success:
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.get_order_admin_new_cancel_success_message(order_number)
+            )
+            
+            order = db.get_order(order_id)
+            
+            tg_username = order["tg_username"]
+            tg_full_name = order["tg_full_name"]
+            full_name = order["full_name"]
+            phone = order["phone"]
+            
+            products_details = get_order_products_details(order["products"])
+            products_text = "\n\n".join(products_details)  
+            
+            delivery_price = order["delivery_price"]
+            total_with_delivery = float(order["order_price"]) + float(delivery_price)
+            delivery_company = order["delivery_company"]
+            delivery_point_address = order["delivery_point_address"]
+            delivery_info = order["delivery_info"]
+            created_at = order["created_at"]
+            timezone = order["timezone"]
+            status = order["status"]
+            
+            order_text = content_cfg.get_order_admin_all_control_show_current_text(
+                order_number,
+                format_local_datetime(created_at, timezone),
+                status,
+                tg_username,
+                tg_full_name,
+                full_name,
+                phone,
+                products_text,
+                delivery_price,
+                total_with_delivery,
+                delivery_company,
+                delivery_point_address,
+                delivery_info
+            )   
+            
+            bot.edit_message_text(
+                order_text,
+                call.message.chat.id,
+                call.message.id,
+                parse_mode="Markdown"
+            )
+            
+            if tg_user_id:
+                header_text = content_cfg.order.place.final.header_text
+                order_text = get_order_content(
+                    order_id, db, content_cfg, logger, header_text
+                )
+                bot.send_message(
+                    tg_user_id, 
+                    content_cfg.get_order_admin_new_cancel_reason_message(
+                        order_number, 
+                        format_local_datetime(created_at, timezone), 
+                        cancel_reason, 
+                        order_text
+                    ),
+                    parse_mode="Markdown"
+                )
+            else:
+                bot.send_message(
+                    message.chat.id, 
+                    content_cfg.order.admin.new.user_not_found.message
+                )
+        else:
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.get_order_admin_new_cancel_error_message(order_number)
+            )
+            
+        admin_cancel_order_delete_session(call.from_user.id)

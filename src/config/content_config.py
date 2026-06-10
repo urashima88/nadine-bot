@@ -143,6 +143,9 @@ class ContentConfig:
             "pendants": "🔮 *Кулоны*",
             "chains": "⛓️ *Цепочки*",
             "rings": "💍 *Кольца*"
+        },
+        "admin": {
+            "message": "🛍️ Каталог артикулов"
         }
     })
     
@@ -162,6 +165,12 @@ class ContentConfig:
                     "..."
                 ),
                 "message": "ℹ️ О Nadine"
+            },
+            "user_data": {
+                "message": "🧑‍💻 Данные пользователей"
+            },
+            "personal_data": {
+                "message": "👤 Личные данные Nadine"
             }
         },
         "user": {
@@ -293,6 +302,11 @@ class ContentConfig:
             "unit_1": "день",
             "unit_234": "дня",
             "unit_other": "дней"
+        },
+        "admin": {
+            "add": {
+                "message": "🆕 Добавить артикул"
+            }
         }
     })
     
@@ -348,7 +362,7 @@ class ContentConfig:
                     "👤 *ФИО:* {full_name}\n"
                     "📱 *Телефон*: [{phone}](tel:{phone})\n"
                     "🚚 *Служба доставки:* {delivery_company}\n"
-                    "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                    "📍 *Адрес пункта выдачи:* {delivery_point_address}\n\n"
                     "📦 *Состав заказа:*\n\n{products_text}\n\n"
                     "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                     "💰 *Общая сумма:* {total_price} ₽\n"
@@ -379,7 +393,7 @@ class ContentConfig:
                         "message": (
                             "⚠️ К сожалению ваш заказ №{order_number} был отменён Nadine.\n\n"
                             "📅 *Дата и время оформления заказа:* {created_at}\n\n"
-                            "Причина: {cancel_reason}\n\n"
+                            "*Причина:* {cancel_reason}\n\n"
                             "{order_text}\n"
                         )
                     },
@@ -395,12 +409,20 @@ class ContentConfig:
                             "👤 *ФИО:* {full_name}\n"
                             "📱 *Телефон*: [{phone}](tel:{phone})\n"
                             "🚚 *Служба доставки:* {delivery_company}\n"
-                            "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                            "📍 *Адрес пункта выдачи:* {delivery_point_address}\n\n"
                             "📦 *Состав заказа:*\n\n{products_text}\n\n"
                             "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                             "{delivery_info_text}\n"
                             "💰 *Общая сумма:* {total_price} ₽\n"
                         )
+                    },
+                    "not_completed_yet": {
+                        "other": {
+                            "message": "⚠️ У вас ещё не завершён процесс отмены другого заказа"
+                        },
+                        "current": {
+                            "message": "⚠️ Вы уже находитесь в процессе отмены данного заказа"
+                        }
                     }
                 },
                 "send": {
@@ -436,6 +458,53 @@ class ContentConfig:
                 "user_not_found": {
                     "message": "❌ Пользователь не найден."
                 }
+            },
+            "all": {
+                "message": "📦 Заказы",
+                "is_empty": {
+                    "message": "Нет заказов"
+                },
+                "control_show": {
+                    "text": (
+                        "Всего заказов: {number_orders}\n"
+                        "Используйте кнопки внизу для навигации."
+                    ),
+                    "next": {"message": "➡️ Следующий заказ пользователя"},
+                    "next5": {"message": "5️⃣ Следующие 5 заказов пользователей"},
+                    "go_back_to_main_menu": {"message": "◀️ Назад в главное меню"},
+                    "session_not_found": {
+                        "message": "⚠️ Сессия не найдена. Нажмите '📦 Заказы'"
+                    },
+                    "current": {
+                        "text": (
+                            "🎁 *Заказ №{order_number}*\n\n"
+                            "📅 *Дата и время оформления заказа:* {created_at}\n"
+                            "📌 *Статус заказа:* {status}\n\n"
+                            "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
+                            "📛 *Имя в Telegram:* {tg_full_name}\n"
+                            "👤 *ФИО:* {full_name}\n"
+                            "📱 *Телефон*: [{phone}](tel:{phone})\n\n"
+                            "📦 *Состав заказа:*\n{products_text}\n\n"
+                            "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
+                            "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
+                            "🚚 *Служба доставки:* {delivery_company}\n"
+                            "📍 *Адрес пункта выдачи:* {delivery_point_address}\n"
+                            "{delivery_info_text}\n"
+                        ),
+                        "delivery_info": {
+                            "text": "🚛 *Информация по доставке:\n*{delivery_info}"
+                        },
+                        "cancel": {
+                            "message": "❌ Отменить заказ"
+                        }
+                    }
+                },
+                "displayed": {
+                    "message": "✅ Все заказы уже показаны"
+                }
+            },
+            "main_menu": {
+                "message": "Главное меню:"
             }
         },
         "user": {
@@ -455,7 +524,7 @@ class ContentConfig:
                         "✅ *Благодарю вас за оформление заказа №{order_number}*\n\n"
                         "📅 *Дата и время оформления заказа:* {created_at}\n"
                         "📌 *Статус заказа:* {status}\n\n"
-                        "📦 *Ваш заказ:*\n{products_text}\n\n"
+                        "📦 *Состав заказа:*\n{products_text}\n\n"
                         "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                         "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
                         "💳 Пожалуйста, произведите оплату по номеру телефона: [{admin_phone}](tel:{admin_phone})\n"
@@ -468,7 +537,7 @@ class ContentConfig:
                         "🧾 *Чек и информация по доставке для заказа №{order_number}*\n\n"
                         "📅 *Дата и время оформления заказа:* {created_at}\n"
                         "📌 *Статус заказа:* {status}\n\n"
-                        "📦 *Ваш заказ:*\n{products_text}\n\n"
+                        "📦 *Состав заказа:*\n{products_text}\n\n"
                         "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                         "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
                         "🚛 *Информация по доставке:\n*{delivery_info}\n"
@@ -492,10 +561,10 @@ class ContentConfig:
                     },
                     "current": {
                         "text": (
-                            "✅ *Заказ №{order_number}*\n\n"
+                            "🎁 *Заказ №{order_number}*\n\n"
                             "📅 *Дата и время оформления заказа:* {created_at}\n"
                             "📌 *Статус заказа:* {status}\n\n"
-                            "📦 *Ваш заказ:*\n{products_text}\n\n"
+                            "📦 *Состав заказа:*\n{products_text}\n\n"
                             "🛵 *Стоимость доставки:* {delivery_price} ₽\n"
                             "💰 *Общая сумма:* {total_with_delivery} ₽\n\n"
                             "🚚 *Служба доставки:* {delivery_company}\n"
@@ -549,6 +618,12 @@ class ContentConfig:
             "update_error": {
                 "message": "❌ Не удалось обновить статус заказа."
             }
+        }
+    })
+    
+    stats: edict = edict({
+        "admin": {
+            "message": "📊 Статистика"
         }
     })
     
@@ -907,3 +982,44 @@ class ContentConfig:
     def order_user_all_control_show_current_copy_to_cart_skipped_message(cls, skipped: List[str]):
         skipped_text = ', '.join(map(str, skipped))
         return cls.order.user.all.control_show.current.copy_to_cart.skipped.message.format(skipped_text=skipped_text)
+    
+    @classmethod
+    def get_order_admin_all_control_show_text(cls, number_orders: int):
+        return cls.order.admin.all.control_show.text.format(number_orders=number_orders)
+    
+    @classmethod
+    def get_order_admin_all_control_show_current_text(
+        cls,
+        order_number: int,
+        created_at: str,
+        status: str,
+        tg_username: str,
+        tg_full_name: str,
+        full_name: str,
+        phone: str,
+        products_text: str,
+        delivery_price: float,
+        total_with_delivery: float,
+        delivery_company: str,
+        delivery_point_address: str,
+        delivery_info: str
+    ):
+        delivery_info_text = ""
+        if delivery_info is not None:
+            delivery_info_text = cls.order.admin.all.control_show.current.delivery_info.text.format(delivery_info=delivery_info)
+        
+        return cls.order.admin.all.control_show.current.text.format(
+            order_number=order_number,
+            created_at=created_at,
+            status=status,
+            tg_username=tg_username,
+            tg_full_name=tg_full_name,
+            full_name=full_name,
+            phone=phone,
+            products_text=products_text,
+            delivery_price=round(float(delivery_price), 2),
+            total_with_delivery=round(float(total_with_delivery), 2),
+            delivery_company=delivery_company,
+            delivery_point_address=delivery_point_address,
+            delivery_info_text=delivery_info_text
+        )

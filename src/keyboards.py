@@ -172,3 +172,34 @@ def order_user_show_current_not_review_status_keyboard(content_cfg: ContentConfi
     ]
     markup.add(*buttons)
     return markup
+
+def admin_main_menu_keyboard(content_cfg: ContentConfig):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton(content_cfg.catalog.admin.message),
+        types.KeyboardButton(content_cfg.product.admin.add.message),
+        types.KeyboardButton(content_cfg.order.admin.all.message),
+        types.KeyboardButton(content_cfg.common.admin.user_data.message),
+        types.KeyboardButton(content_cfg.stats.admin.message),
+        types.KeyboardButton(content_cfg.common.admin.personal_data.message)
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_admin_control_show_mode_keyboard(content_cfg: ContentConfig):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = [
+        types.KeyboardButton(content_cfg.order.admin.all.control_show.next.message),
+        types.KeyboardButton(content_cfg.order.admin.all.control_show.next5.message),
+        types.KeyboardButton(content_cfg.order.admin.all.control_show.go_back_to_main_menu.message)
+    ]
+    markup.add(*buttons)
+    return markup
+
+def order_admin_show_current_review_status_keyboard(content_cfg: ContentConfig, order_id: str):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.order.admin.all.control_show.current.cancel.message, callback_data=f"show_admin_cancel_order_{order_id}")
+    ]
+    markup.add(*buttons)
+    return markup
