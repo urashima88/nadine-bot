@@ -108,6 +108,7 @@ class Storage:
                 cur.execute("""
                     SELECT 
                         p.name,
+                        p.article_number,
                         p.description,
                         p.price,
                         p.category,
@@ -175,7 +176,10 @@ class Storage:
                 cur.execute("""
                     SELECT
                         tg_username,
-                        phone
+                        tg_full_name,
+                        full_name,
+                        phone,
+                        timezone
                     FROM users
                     WHERE is_admin;
                 """)
@@ -486,7 +490,8 @@ class Storage:
                 cur.execute("""
                     UPDATE orders
                     SET status = 'отменён', updated_at = NOW()
-                    WHERE id = %s::uuid AND status = 'на рассмотрении'
+                    WHERE id = %s::uuid 
+                        AND (status = 'на рассмотрении' OR status = 'отправлен на оплату')
                     RETURNING id
                 """, (order_id,))
                 row = cur.fetchone()
@@ -754,3 +759,48 @@ class Storage:
                 """)
                 rows = cur.fetchall()
                 return [dict(row) for row in rows]
+            
+    def admin_get_all_products(self) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        p.name,
+                        p.article_number,
+                        p.description,
+                        p.price,
+                        p.category,
+                        p.image_dir,
+                        p.production_time,
+                        p.prod_limit,
+                        COALESCE(string_agg(m.name, ', '), '') AS materials_list
+                    FROM products p
+                    LEFT JOIN product_materials pm ON p.id = pm.product_id
+                    LEFT JOIN materials m ON pm.material_id = m.id
+                    GROUP BY p.id
+                    ORDER BY p.article_number;
+                """)
+                return cur.fetchall()
+            
+    def admin_get_category_products(self, category: str) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        p.name,
+                        p.article_number,
+                        p.description,
+                        p.price,
+                        p.category,
+                        p.image_dir,
+                        p.production_time,
+                        p.prod_limit,
+                        COALESCE(string_agg(m.name, ', '), '') AS materials_list
+                    FROM products p
+                    LEFT JOIN product_materials pm ON p.id = pm.product_id
+                    LEFT JOIN materials m ON pm.material_id = m.id
+                    WHERE p.category = %s
+                    GROUP BY p.id
+                    ORDER BY p.article_number;
+                """, (category,))
+                return cur.fetchall()

@@ -12,15 +12,10 @@ from src.states.order_session import (
     get_order_session,
     delete_order_session,
 )
-from src.states.user_order_show_session import (
-    user_order_show_set_session,
-    user_order_show_get_session,
-    user_order_show_delete_session
-)
-from src.states.admin_order_show_session import (
-    admin_order_show_set_session,
-    admin_order_show_get_session,
-    admin_order_show_delete_session
+from src.states.order_show_session import (
+    order_show_set_session,
+    order_show_get_session,
+    order_show_delete_session
 )
 from src.states.admin_cancel_order_session import (
     admin_cancel_order_set_session,
@@ -96,30 +91,30 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         logger.debug("get_field_name_and_prompt CALL")
 
         if index == 0:
-            return "full_name", content_cfg.common.user.profile.edit.full_name.text
+            return "full_name", content_cfg.common.profile.edit.full_name.text
         elif index == 1:
-            return "phone", content_cfg.common.user.profile.edit.phone.text
+            return "phone", content_cfg.common.profile.edit.phone.text
         elif index == 2:
-            return "timezone", content_cfg.common.user.profile.edit.timezone.text
+            return "timezone", content_cfg.common.profile.edit.timezone.text
         elif index == 3:
-            return "delivery_company", content_cfg.common.user.profile.edit.delivery_company.text
-        return "delivery_point_address", content_cfg.common.user.profile.edit.delivery_point_address.text
+            return "delivery_company", content_cfg.common.profile.edit.delivery_company.text
+        return "delivery_point_address", content_cfg.common.profile.edit.delivery_point_address.text
         
     def update_user_profile_field(message, call, index: int):
         logger.debug("update_user_profile_field CALL")
         
         name, _ = get_field_name_and_prompt(index)
-        success, success_message = check_and_update_user_profile_field(
+        success, result_message = check_and_update_user_profile_field(
             message, 
-            bot, 
             db, 
             call.from_user.id, 
             "edit_" + name,
-            content_cfg
+            content_cfg,
+            logger
         )
             
         if success:
-            bot.send_message(message.chat.id, success_message)
+            bot.send_message(message.chat.id, result_message)
             delete_message(bot, message.chat.id, message.message_id, logger)
             if index < 5:
                 session = get_order_session(call.from_user.id)
@@ -130,7 +125,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 check_order_chain(call)
         else:
             delete_order_session(call.from_user.id)
-            bot.send_message(message.chat.id, content_cfg.common.user.profile.edit.update_error.message)
+            bot.send_message(message.chat.id, result_message)
        
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_field_'))
     @err_handler
@@ -163,9 +158,9 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         logger.debug("get_delivery_field_question CALL")
         
         if index == 3:
-            return content_cfg.get_common_user_profile_edit_delivery_company_question_message(field_value)
+            return content_cfg.get_common_profile_edit_delivery_company_question_message(field_value)
         elif index == 4:
-            return content_cfg.get_common_user_profile_edit_delivery_point_address_question_message(field_value)
+            return content_cfg.get_common_profile_edit_delivery_point_address_question_message(field_value)
         
     def check_order_chain(call):
         logger.debug("check_order_chain CALL")
@@ -673,7 +668,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             bot.send_message(message.chat.id, content_cfg.order.user.all.is_empty.message)
             return
         
-        user_order_show_set_session(tg_user_id, orders)
+        order_show_set_session(tg_user_id, orders)
         
         order_control_show_text = content_cfg.get_order_user_all_control_show_text(len(orders))
         
@@ -695,12 +690,12 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             content_cfg.order.user.main_menu.message, 
             reply_markup=main_menu_keyboard(content_cfg)
         )
-        user_order_show_delete_session(user_id)
+        order_show_delete_session(user_id)
         
     def user_send_next_orders(chat_id: int, user_id: int, count: int):
         logger.debug("user_send_next_orders CALL")
         
-        session = user_order_show_get_session(user_id)
+        session = order_show_get_session(user_id)
         if not session:
             bot.send_message(chat_id, content_cfg.order.user.all.control_show.session_not_found.message)
             return
@@ -762,7 +757,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         logger.debug("user_send_orders CALL")
         
         user_id = message.from_user.id
-        session = user_order_show_get_session(user_id)
+        session = order_show_get_session(user_id)
         if not session:
             bot.send_message(message.chat.id, content_cfg.order.user.all.control_show.session_not_found.message)
             return
@@ -789,7 +784,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         logger.debug("user_order_control_show_go_back_to_main_menu CALL")
         
         user_id = message.from_user.id
-        user_order_show_delete_session(user_id)
+        order_show_delete_session(user_id)
         bot.send_message(
             message.chat.id,
             content_cfg.order.user.main_menu.message,
@@ -951,9 +946,9 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         response = []
         if added:
-            response.append(content_cfg.order_user_all_control_show_current_copy_to_cart_added_message(added))
+            response.append(content_cfg.get_order_user_all_control_show_current_copy_to_cart_added_message(added))
         if skipped:
-            response.append(content_cfg.order_user_all_control_show_current_copy_to_cart_skipped_message(skipped))
+            response.append(content_cfg.get_order_user_all_control_show_current_copy_to_cart_skipped_message(skipped))
             
         if not response:
             response.append(content_cfg.order.user.all.control_show.current.copy_to_cart.no_products)
@@ -976,7 +971,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             bot.send_message(message.chat.id, content_cfg.order.admin.all.is_empty.message)
             return
         
-        admin_order_show_set_session(tg_user_id, orders)
+        order_show_set_session(tg_user_id, orders)
         
         order_control_show_text = content_cfg.get_order_admin_all_control_show_text(len(orders))
         
@@ -992,7 +987,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
     def admin_send_next_orders(chat_id: int, user_id: int, count: int):
         logger.debug("admin_send_next_orders CALL")
         
-        session = admin_order_show_get_session(user_id)
+        session = order_show_get_session(user_id)
         if not session:
             bot.send_message(chat_id, content_cfg.order.admin.all.control_show.session_not_found.message)
             return
@@ -1070,13 +1065,13 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             content_cfg.order.admin.main_menu.message, 
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )
-        admin_order_show_delete_session(user_id)
+        order_show_delete_session(user_id)
         
     def admin_send_orders(message, count):
         logger.debug("admin_send_orders CALL")
         
         user_id = message.from_user.id
-        session = admin_order_show_get_session(user_id)
+        session = order_show_get_session(user_id)
         if not session:
             bot.send_message(message.chat.id, content_cfg.order.admin.all.control_show.session_not_found.message)
             return
@@ -1103,7 +1098,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         logger.debug("admin_order_control_show_go_back_to_main_menu CALL")
         
         user_id = message.from_user.id
-        admin_order_show_delete_session(user_id)
+        order_show_delete_session(user_id)
         bot.send_message(
             message.chat.id,
             content_cfg.order.admin.main_menu.message,

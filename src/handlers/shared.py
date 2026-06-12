@@ -1,11 +1,13 @@
 from logging import Logger
+import os
 import re
 from typing import List, Dict, Any, Tuple
 
-from telebot import TeleBot
+from telebot import TeleBot, types
 
 from src.storage import Storage
 from src.config.content_config import ContentConfig
+from src.utils.content import get_production_time_days_ru_format
 
 def get_cart_content(
     user_id: int, 
@@ -77,23 +79,20 @@ def get_products_text_and_total_price(products: List[Dict[str, Any]], content_cf
 
 def check_and_update_user_profile_field(
     message, 
-    bot: TeleBot, 
     db: Storage, 
     tg_user_id: int, 
     call_data: str,
-    content_cfg: ContentConfig
+    content_cfg: ContentConfig,
+    logger: Logger
 ) -> Tuple[bool, str]:
+    logger.debug("check_and_update_user_profile_field CALL")
+    
     new_value = message.text.strip()
     if not new_value:
-        bot.send_message(message.chat.id, content_cfg.common.user.profile.edit.empty_value.message)
-        return
+        return False, content_cfg.common.profile.edit.empty_value.message
     
-    if call_data == "edit_phone" and not re.match(r"^\+?[0-9\s\-\(\)]{10,20}$", new_value):
-        bot.send_message(
-            message.chat.id,
-            content_cfg.common.user.profile.edit.phone.wrong_format.message
-        )
-        return
+    if call_data == "edit_phone" and not re.match(r"^\+?[0-9\s\-\(\)]{10,20}$", new_value):      
+        return False, content_cfg.common.profile.edit.phone.wrong_format.message
     
     if call_data == "edit_timezone":
         if new_value.startswith('+') or new_value.startswith('-'):
@@ -101,45 +100,80 @@ def check_and_update_user_profile_field(
             try:
                 hours = int(new_value[1:])
             except:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.common.user.profile.edit.timezone.wrong_format.message
-                )
-                return
+                return False, content_cfg.common.profile.edit.timezone.wrong_format.message
         else:
             try:
                 hours = int(new_value)
                 sign = '+' if hours >= 0 else '-'
                 hours = abs(hours)
             except:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.common.user.profile.edit.timezone.wrong_format.message
-                )
-                return
+                return False, content_cfg.common.profile.edit.timezone.wrong_format.message
         if hours > 12:
-            bot.send_message(
-                message.chat.id,
-                content_cfg.common.user.profile.edit.timezone.offset_exceed.message
-            )
-            return
+            return False, content_cfg.common.profile.edit.timezone.offset_exceed.message
         timezone_str = f"UTC{sign}{hours}"
         
         
     if call_data == "edit_full_name":
         success = db.update_user_full_name(tg_user_id, new_value)
-        success_message = content_cfg.common.user.profile.edit.full_name.update.message
+        success_message = content_cfg.common.profile.edit.full_name.update.message
     elif call_data == "edit_phone":
         success = db.update_user_phone(tg_user_id, new_value)
-        success_message = content_cfg.common.user.profile.edit.phone.update.message
+        success_message = content_cfg.common.profile.edit.phone.update.message
     elif call_data == "edit_timezone":
         success = db.update_user_timezone(tg_user_id, timezone_str)
-        success_message = content_cfg.common.user.profile.edit.timezone.update.message
+        success_message = content_cfg.common.profile.edit.timezone.update.message
     elif call_data == "edit_delivery_company":
         success = db.update_delivery_company(tg_user_id, new_value)
-        success_message = content_cfg.common.user.profile.edit.delivery_company.update.message
+        success_message = content_cfg.common.profile.edit.delivery_company.update.message
     else:
         success = db.update_delivery_point_address(tg_user_id, new_value)
-        success_message = content_cfg.common.user.profile.edit.delivery_point_address.update.message
+        success_message = content_cfg.common.profile.edit.delivery_point_address.update.message
     return success, success_message
     
+def process_product(
+    product: Dict[str, Any], 
+    bot: TeleBot, 
+    chat_id: int, 
+    content_cfg: ContentConfig, 
+    logger: Logger
+) -> str:
+    logger.debug("process_product CALL")
+        
+    name = product['name']
+    article_number = product['article_number']
+    description = product['description']
+    price = product['price']
+    category = product['category']
+    production_time = product['production_time']
+    prod_limit = product['prod_limit']
+    image_dir = product['image_dir']
+    materials_list = product['materials_list']
+    
+    text = content_cfg.get_product_details_text(
+        name,
+        article_number,
+        description,
+        price,
+        materials_list,
+        category,
+        production_time,
+        prod_limit,
+        get_production_time_days_ru_format(
+            production_time, 
+            content_cfg.product.production_time.unit_1,
+            content_cfg.product.production_time.unit_234,
+            content_cfg.product.production_time.unit_other
+        )
+    )
+    
+    if os.path.exists(image_dir):
+        image_filenames = os.listdir(image_dir)
+        if image_filenames:
+            media = []
+            for image_filename in image_filenames:
+                with open(os.path.join(image_dir, image_filename), 'rb') as f:
+                    media.append(types.InputMediaPhoto(f.read()))
+            if media:
+                bot.send_media_group(chat_id, media)
+                
+    return text

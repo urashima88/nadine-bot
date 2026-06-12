@@ -10,15 +10,15 @@ from src.keyboards import (
     main_menu_keyboard,
     common_user_profile_edit_keyboard,
     admin_main_menu_keyboard,
-    common_admin_control_show_user_data_mode_keyboard
+    common_admin_control_show_user_data_mode_keyboard,
+    common_admin_profile_edit_keyboard
 )
 from src.utils.wrappers import error_handler
 from src.utils.clean import delete_message
 from src.handlers.shared import check_and_update_user_profile_field
 from src.states.cart_session import get_cart_session, delete_cart_session
 from src.states.catalog_session import get_catalog_session, delete_catalog_session
-from src.states.user_order_show_session import user_order_show_get_session, user_order_show_delete_session
-from src.states.admin_order_show_session import admin_order_show_get_session, admin_order_show_delete_session
+from src.states.order_show_session import order_show_get_session, order_show_delete_session
 from src.states.admin_cancel_order_session import admin_cancel_order_get_session, admin_cancel_order_delete_session
 from src.states.admin_user_data_show_session import (
     admin_user_data_show_set_session, 
@@ -69,9 +69,9 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         if cart_session:
             delete_cart_session(user_id)
             
-        user_order_show_session = user_order_show_get_session(user_id)
-        if user_order_show_session:
-            user_order_show_delete_session(user_id)
+        order_show_session = order_show_get_session(user_id)
+        if order_show_session:
+            order_show_delete_session(user_id)
         
         bot.send_message(
             message.chat.id, 
@@ -89,10 +89,10 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         admin_cancel_order_session = admin_cancel_order_get_session(user_id)
         if admin_cancel_order_session:
             admin_cancel_order_delete_session(user_id)
-        
-        admin_order_show_session = admin_order_show_get_session(user_id)
-        if admin_order_show_session:
-            admin_order_show_delete_session(user_id)
+            
+        order_show_session = order_show_get_session(user_id)
+        if order_show_session:
+            order_show_delete_session(user_id)
             
         admin_user_data_show_session = admin_user_data_show_get_session(user_id)
         if admin_user_data_show_session:
@@ -110,7 +110,13 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         logger.debug("send_admin_contacts CALL")
         
         contacts = db.get_admin_contacts()
-        contacts_text = content_cfg.get_common_admin_contacts_text(contacts["tg_username"], contacts["phone"])
+        contacts_text = content_cfg.get_common_admin_contacts_text(
+            contacts["tg_username"], 
+            contacts["tg_full_name"],
+            contacts["full_name"],
+            contacts["phone"],
+            contacts["timezone"],
+        )
         bot.send_message(
             message.chat.id,
             contacts_text,
@@ -130,6 +136,13 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
             about_text,
             parse_mode="Markdown"
         )
+
+    @bot.message_handler(func=lambda message: message.text == content_cfg.common.user.personal_data.message)
+    @err_handler
+    def handle_profile(message):
+        logger.debug("handle_profile CALL")
+        
+        show_profile(message.chat.id, message.from_user.id)
         
     def show_profile(chat_id: int, user_id: int):
         logger.debug("show_profile CALL")
@@ -142,14 +155,27 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
             profile_text, 
             parse_mode="Markdown", 
             reply_markup=common_user_profile_edit_keyboard(content_cfg)
-        )
-
-    @bot.message_handler(func=lambda message: message.text == content_cfg.common.user.personal_data.message)
-    @err_handler
-    def handle_profile(message):
-        logger.debug("handle_profile CALL")
+        )        
         
-        show_profile(message.chat.id, message.from_user.id)
+    @bot.message_handler(func=lambda message: message.text == content_cfg.common.admin.personal_data.message)
+    @err_handler
+    def handle_admin_profile(message):
+        logger.debug("handle_admin_profile CALL")
+        
+        admin_show_profile(message.chat.id, message.from_user.id)
+        
+    def admin_show_profile(chat_id: int, user_id: int):
+        logger.debug("admin_show_profile CALL")
+        
+        full_name, phone, timezone, _, _ = db.get_user_profile_data(user_id)
+        profile_text = content_cfg.get_common_admin_profile_text(full_name, phone, timezone)    
+        
+        bot.send_message(
+            chat_id, 
+            profile_text, 
+            parse_mode="Markdown", 
+            reply_markup=common_admin_profile_edit_keyboard(content_cfg)
+        )
     
     @bot.callback_query_handler(func=lambda call: call.data in ("edit_full_name", "edit_phone", "edit_timezone", "edit_delivery_company", "edit_delivery_point_address"))
     @err_handler
@@ -159,15 +185,15 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         bot.answer_callback_query(call.id)
         call_data = call.data
         if call_data == "edit_full_name":
-            prompt = content_cfg.common.user.profile.edit.full_name.text
+            prompt = content_cfg.common.profile.edit.full_name.text
         elif call_data == "edit_phone":
-            prompt = content_cfg.common.user.profile.edit.phone.text
+            prompt = content_cfg.common.profile.edit.phone.text
         elif call_data == "edit_timezone":
-            prompt = content_cfg.common.user.profile.edit.timezone.text
+            prompt = content_cfg.common.profile.edit.timezone.text
         elif call_data == "edit_delivery_company":
-            prompt = content_cfg.common.user.profile.edit.delivery_company.text
+            prompt = content_cfg.common.profile.edit.delivery_company.text
         else:
-            prompt = content_cfg.common.user.profile.edit.delivery_point_address.text
+            prompt = content_cfg.common.profile.edit.delivery_point_address.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
@@ -179,21 +205,24 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
     def save_user_profile_field(message, tg_user_id: int, call_data: str):
         logger.debug("save_user_profile_field CALL (common)")
         
-        success, success_message = check_and_update_user_profile_field(
+        success, result_message = check_and_update_user_profile_field(
             message, 
-            bot, 
             db, 
             tg_user_id, 
             call_data,
-            content_cfg
+            content_cfg,
+            logger
         )
             
         if success:
-            bot.send_message(message.chat.id, success_message)
+            bot.send_message(message.chat.id, result_message)
             delete_message(bot, message.chat.id, message.message_id, logger)
-            show_profile(message.chat.id, tg_user_id)
+            if db.is_admin(tg_user_id):
+                admin_show_profile(message.chat.id, tg_user_id)
+            else:
+                show_profile(message.chat.id, tg_user_id)
         else:
-            bot.send_message(message.chat.id, content_cfg.common.user.profile.edit.update_error.message)
+            bot.send_message(message.chat.id, result_message)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.common.admin.user_data.all.message)
     @err_handler

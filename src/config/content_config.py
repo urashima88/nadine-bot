@@ -145,7 +145,16 @@ class ContentConfig:
             "rings": "💍 *Кольца*"
         },
         "admin": {
-            "message": "🛍️ Каталог артикулов"
+            "category_menu": {
+                "header_text": "🎁 *Каталог артикулов*\n\nВыберите категорию:",
+            },
+            "message": "🛍️ Каталог артикулов",
+            "control_show": {
+                "next": {"message": "➡️ Следующий артикул"},
+                "next5": {"message": "5️⃣ Следующие 5 артикулов"},
+                "stop": {"message": "⏹ Прекратить показ"},
+                "go_back_to_main_menu": {"message": "◀️ Выйти главное меню"}
+            },
         }
     })
     
@@ -155,7 +164,10 @@ class ContentConfig:
                 "text": (
                     "📞 *Контакты Nadine:*\n\n"
                     "🆔 *Имя пользователя:* [@{tg_username}](https://t.me/{tg_username})\n"
-                    "📱 *Телефон:* [{phone}](tel:{phone})"
+                    "📇 *Имя в Telegram:* {tg_full_name}\n"
+                    "📛 *ФИО:* {full_name}\n"
+                    "📱 *Телефон:* [{phone}](tel:{phone})\n"
+                    "🌐 *Часовой пояс:* {timezone}\n"
                 ),
                 "message": "📞 Связаться с Nadine"
             },
@@ -206,8 +218,16 @@ class ContentConfig:
                 }
             },
             "personal_data": {
-                "message": "👤 Личные данные Nadine"
+                "message": "👤 Личные данные Nadine",
             },
+            "profile": {
+                "text": (
+                    "👤 *Личные данные:*\n\n"
+                    "📛 *ФИО:* {full_name}\n"
+                    "📱 *Телефон:* {phone}\n"
+                    "🌐 *Часовой пояс:* {timezone}\n"
+                )
+            }
         },
         "user": {
             "personal_data": {
@@ -215,88 +235,88 @@ class ContentConfig:
             },
             "profile": {
                 "text": (
-                    "👤 *Личные данные*\n\n"
+                    "👤 *Личные данные:*\n\n"
                     "📛 *ФИО:* {full_name}\n"
                     "📱 *Телефон:* {phone}\n"
                     "🌐 *Часовой пояс:* {timezone}\n"
                     "🚚 *Служба доставки:* {delivery_company}\n"
                     "📍 *Адрес пункта выдачи:* {delivery_point_address}" 
-                ),
-                "eng2ru_field_map": {
-                    "full_name": "ФИО",
-                    "phone": "Телефон",
-                    "delivery_company": "Служба доставки",
-                    "delivery_point_address": "Адрес пункта выдачи"
-                },
-                "edit": {
-                    "full_name": {
-                        "message": "✏️ Изменить ФИО",
-                        "text": "Введите ФИО:",
-                        "update": {
-                            "message": "✅ ФИО было успешно обновлено."
-                        }
-                    },
-                    "phone": {
-                        "message": "✏️ Изменить телефон",
-                        "text": "Введите номер телефона:",
-                        "update": {
-                            "message": "✅ Номер телефона был успешно обновлён."
-                        },
-                        "wrong_format": {
-                            "message": "❌ Неверный формат телефона. Введите номер например в таком формате +7.........."
-                        },
-                    },
-                    "timezone": {
-                        "message": "✏️ Изменить часовой пояс",
-                        "text": "Введите ваш часовой пояс в формате ±число, где число – смещение от UTC (целое число, например, +3, -5, 0):",
-                        "update": {
-                            "message": "✅ Часовой пояс был успешно обновлён."
-                        },
-                        "wrong_format": {
-                            "message": "❌ Неверный формат. Введите, например: +3, или 2, или -5"
-                        },
-                        "offset_exceed": {
-                            "message": "❌ Смещение не может превышать ±12 часов."
-                        }
-                    },
-                    "delivery_company": {
-                        "message": "✏️ Изменить службу доставки",
-                        "text": "Введите название службы доставки (например, Яндекс Доставка):",
-                        "update": {
-                            "message": "✅ Служба доставки была успешно обновлена."
-                        },
-                        "question": {
-                            "message": (
-                                "У вас уже указана служба доставки: {delivery_company}\n"
-                                "Вы хотели бы изменить её?"
-                            ),
-                        }
-                    },
-                    "delivery_point_address": {
-                        "message": "✏️ Изменить адрес пункта выдачи",
-                        "text": "Введите адрес пункта выдачи (например, г. Москва, Долгоруковская улица, 40):",
-                        "update": {
-                            "message": "✅ Адрес пункта выдачи был успешно обновлён."
-                        },
-                        "question": {
-                            "message": (
-                                "У вас уже указан адрес пункта выдачи: {delivery_point_address}\n"
-                                "Вы хотели бы изменить его?"
-                            ),
-                        }
-                    },
-                    "yes": {
-                        "message": "Да"
-                    },
-                    "no": {
-                        "message": "Нет"
-                    },
-                    "empty_value": {
-                        "message": "❌ Значение не может быть пустым."
-                    },
-                    "update_error": {
-                        "message": "❌ Ошибка обновления. Попробуйте позже."
+                )
+            }
+        },
+        "profile": {
+            "eng2ru_field_map": {
+                "full_name": "ФИО",
+                "phone": "Телефон",
+                "timezone": "Часовой пояс",
+                "delivery_company": "Служба доставки",
+                "delivery_point_address": "Адрес пункта выдачи"
+            },
+            "edit": {
+                "full_name": {
+                    "message": "✏️ Изменить ФИО",
+                    "text": "Введите ФИО:",
+                    "update": {
+                        "message": "✅ ФИО было успешно обновлено."
                     }
+                },
+                "phone": {
+                    "message": "✏️ Изменить телефон",
+                    "text": "Введите номер телефона:",
+                    "update": {
+                        "message": "✅ Номер телефона был успешно обновлён."
+                    },
+                    "wrong_format": {
+                        "message": "❌ Неверный формат телефона. Введите номер например в таком формате +7.........."
+                    },
+                },
+                "timezone": {
+                    "message": "✏️ Изменить часовой пояс",
+                    "text": "Введите ваш часовой пояс в формате ±число, где число – смещение от UTC (целое число, например, +3, -5, 0):",
+                    "update": {
+                        "message": "✅ Часовой пояс был успешно обновлён."
+                    },
+                    "wrong_format": {
+                        "message": "❌ Неверный формат. Введите, например: +3, или 2, или -5"
+                    },
+                    "offset_exceed": {
+                        "message": "❌ Смещение не может превышать ±12 часов."
+                    }
+                },
+                "delivery_company": {
+                    "message": "✏️ Изменить службу доставки",
+                    "text": "Введите название службы доставки (например, Яндекс Доставка):",
+                    "update": {
+                        "message": "✅ Служба доставки была успешно обновлена."
+                    },
+                    "question": {
+                        "message": (
+                            "У вас уже указана служба доставки: {delivery_company}\n"
+                            "Вы хотели бы изменить её?"
+                        ),
+                    }
+                },
+                "delivery_point_address": {
+                    "message": "✏️ Изменить адрес пункта выдачи",
+                    "text": "Введите адрес пункта выдачи (например, г. Москва, Долгоруковская улица, 40):",
+                    "update": {
+                        "message": "✅ Адрес пункта выдачи был успешно обновлён."
+                    },
+                    "question": {
+                        "message": (
+                            "У вас уже указан адрес пункта выдачи: {delivery_point_address}\n"
+                            "Вы хотели бы изменить его?"
+                        ),
+                    }
+                },
+                "yes": {
+                    "message": "Да"
+                },
+                "no": {
+                    "message": "Нет"
+                },
+                "empty_value": {
+                    "message": "❌ Значение не может быть пустым."
                 }
             }
         },
@@ -331,8 +351,7 @@ class ContentConfig:
                 "⛓️ *Материалы:* {materials}\n"
                 "🏷️ *Категория:* {category}\n"
                 "🕒 *Время изготовления:* {production_time} {production_time_units}\n"
-                "📦 *Максимум товаров в одном заказе:* {prod_limit}\n\n"
-                "Выберите действие:"
+                "📦 *Максимум товаров в одном заказе:* {prod_limit}\n"
             ),
             "message": "📋 Подробнее"
         },
@@ -350,6 +369,36 @@ class ContentConfig:
         "admin": {
             "add": {
                 "message": "🆕 Добавить артикул"
+            },
+            "edit": {
+                "message": "✏️ Изменить артикул",
+                "name": {
+                    "message": "✏️ Изменить название"
+                },
+                "article_number": {
+                    "message": "✏️ Изменить номер артикула"
+                },
+                "description": {
+                    "message": "✏️ Изменить описание"
+                },
+                "price": {
+                    "message": "✏️ Изменить цену"
+                },
+                "category": {
+                    "message": "✏️ Изменить категорию"
+                },
+                "production_time": {
+                    "message": "✏️ Изменить время изготовления"
+                },
+                "prod_limit": {
+                    "message": "✏️ Изменить максимум в одном заказе"
+                },
+                "materials": {
+                    "message": "✏️ Изменить материалы"
+                },
+                "images": {
+                    "message": "✏️ Изменить изображения"
+                }
             }
         }
     })
@@ -720,7 +769,7 @@ class ContentConfig:
             category_text=cls.catalog.category2text_map.get(category),
             number_products=number_products
         )
-    
+        
     # common
     
     @classmethod
@@ -728,8 +777,21 @@ class ContentConfig:
         return cls.common.welcome.message.format(full_name=full_name)
     
     @classmethod
-    def get_common_admin_contacts_text(cls, tg_username: str, phone: str):
-        return cls.common.admin.contacts.text.format(tg_username=tg_username, phone=phone)
+    def get_common_admin_contacts_text(
+        cls, 
+        tg_username: str,
+        tg_full_name: str,
+        full_name: str, 
+        phone: str,
+        timezone: str
+    ):
+        return cls.common.admin.contacts.text.format(
+            tg_username=tg_username, 
+            tg_full_name=tg_full_name,
+            full_name=full_name,
+            phone=phone,
+            timezone=timezone
+        )
     
     @classmethod
     def get_common_user_profile_text(
@@ -747,14 +809,54 @@ class ContentConfig:
             delivery_company=delivery_company if delivery_company else "-",
             delivery_point_address=delivery_point_address if delivery_point_address else "-"
         )
+        
+    @classmethod
+    def get_common_admin_profile_text(
+        cls,
+        full_name: str,
+        phone: str,
+        timezone: str
+    ):
+        return cls.common.admin.profile.text.format(
+            full_name=full_name,
+            phone=phone,
+            timezone=timezone
+        )
     
     @classmethod 
-    def get_common_user_profile_edit_delivery_company_question_message(cls, delivery_company: str):
-        return cls.common.user.profile.edit.delivery_company.question.message.format(delivery_company=delivery_company)
+    def get_common_profile_edit_delivery_company_question_message(cls, delivery_company: str):
+        return cls.common.profile.edit.delivery_company.question.message.format(delivery_company=delivery_company)
     
     @classmethod
-    def get_common_user_profile_edit_delivery_point_address_question_message(cls, delivery_point_address: str):
-        return cls.common.user.profile.edit.delivery_point_address.question.message.format(delivery_point_address=delivery_point_address)
+    def get_common_profile_edit_delivery_point_address_question_message(cls, delivery_point_address: str):
+        return cls.common.profile.edit.delivery_point_address.question.message.format(delivery_point_address=delivery_point_address)
+    
+    @classmethod
+    def get_common_admin_user_data_all_control_show_text(cls, number_users: int):
+        return cls.common.admin.user_data.all.control_show.text.format(number_users=number_users)
+    
+    @classmethod
+    def get_common_admin_user_data_all_control_show_current_text(
+        cls,
+        tg_username: str,
+        tg_full_name: str,
+        full_name: str,
+        phone: str,
+        timezone: str,
+        delivery_company: str,
+        delivery_point_address: str,
+        created_at: str
+    ):
+        return cls.common.admin.user_data.all.control_show.current.text.format(
+            tg_username=tg_username,
+            tg_full_name=tg_full_name,
+            full_name=full_name,
+            phone=phone,
+            timezone=timezone,
+            delivery_company=delivery_company,
+            delivery_point_address=delivery_point_address,
+            created_at=created_at
+        )
     
     # product
     
@@ -797,7 +899,7 @@ class ContentConfig:
     def get_order_place_empty_fields_message(cls, fields: List[str]):
         translated_fields = []
         for field in fields:
-            translated_field = cls.common.user.profile.eng2ru_field_map.get(field)
+            translated_field = cls.common.profile.eng2ru_field_map.get(field)
             translated_fields.append(translated_field)
         fields_string = ", ".join(translated_fields)
         return cls.order.place.empty_fields.message.format(fields_string=fields_string)
@@ -1018,12 +1120,12 @@ class ContentConfig:
         return cls.order.user.cancel.error.message.format(order_number=order_number)
     
     @classmethod
-    def order_user_all_control_show_current_copy_to_cart_added_message(cls, added: List[str]):
+    def get_order_user_all_control_show_current_copy_to_cart_added_message(cls, added: List[str]):
         added_text = ', '.join(map(str, added))
         return cls.order.user.all.control_show.current.copy_to_cart.added.message.format(added_text=added_text)
     
     @classmethod
-    def order_user_all_control_show_current_copy_to_cart_skipped_message(cls, skipped: List[str]):
+    def get_order_user_all_control_show_current_copy_to_cart_skipped_message(cls, skipped: List[str]):
         skipped_text = ', '.join(map(str, skipped))
         return cls.order.user.all.control_show.current.copy_to_cart.skipped.message.format(skipped_text=skipped_text)
     
@@ -1068,29 +1170,3 @@ class ContentConfig:
             delivery_info_text=delivery_info_text
         )
         
-    @classmethod
-    def get_common_admin_user_data_all_control_show_text(cls, number_users: int):
-        return cls.common.admin.user_data.all.control_show.text.format(number_users=number_users)
-    
-    @classmethod
-    def get_common_admin_user_data_all_control_show_current_text(
-        cls,
-        tg_username: str,
-        tg_full_name: str,
-        full_name: str,
-        phone: str,
-        timezone: str,
-        delivery_company: str,
-        delivery_point_address: str,
-        created_at: str
-    ):
-        return cls.common.admin.user_data.all.control_show.current.text.format(
-            tg_username=tg_username,
-            tg_full_name=tg_full_name,
-            full_name=full_name,
-            phone=phone,
-            timezone=timezone,
-            delivery_company=delivery_company,
-            delivery_point_address=delivery_point_address,
-            created_at=created_at
-        )
