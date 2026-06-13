@@ -115,19 +115,27 @@ def check_and_update_user_profile_field(
         
     if call_data == "edit_full_name":
         success = db.update_user_full_name(tg_user_id, new_value)
-        success_message = content_cfg.common.profile.edit.full_name.update.message
+        update_error_message = content_cfg.common.profile.edit.full_name.update_error.message
+        success_message = content_cfg.common.profile.edit.full_name.success.message
     elif call_data == "edit_phone":
         success = db.update_user_phone(tg_user_id, new_value)
-        success_message = content_cfg.common.profile.edit.phone.update.message
+        update_error_message = content_cfg.common.profile.edit.phone.update_error.message
+        success_message = content_cfg.common.profile.edit.phone.success.message
     elif call_data == "edit_timezone":
         success = db.update_user_timezone(tg_user_id, timezone_str)
-        success_message = content_cfg.common.profile.edit.timezone.update.message
+        update_error_message = content_cfg.common.profile.edit.timezone.update_error.message
+        success_message = content_cfg.common.profile.edit.timezone.success.message
     elif call_data == "edit_delivery_company":
         success = db.update_delivery_company(tg_user_id, new_value)
-        success_message = content_cfg.common.profile.edit.delivery_company.update.message
+        update_error_message = content_cfg.common.profile.edit.delivery_company.update_error.message
+        success_message = content_cfg.common.profile.edit.delivery_company.success.message
     else:
         success = db.update_delivery_point_address(tg_user_id, new_value)
-        success_message = content_cfg.common.profile.edit.delivery_point_address.update.message
+        update_error_message = content_cfg.common.profile.edit.delivery_point_address.update_error.message
+        success_message = content_cfg.common.profile.edit.delivery_point_address.success.message
+        
+    if not success:
+        return False, update_error_message
     return success, success_message
     
 def process_product(
@@ -138,7 +146,30 @@ def process_product(
     logger: Logger
 ) -> str:
     logger.debug("process_product CALL")
-        
+    
+    text = prepare_product_text(
+        product,
+        content_cfg,
+        logger
+    )
+    
+    image_dir = product['image_dir']
+    
+    if os.path.exists(image_dir):
+        image_filenames = os.listdir(image_dir)
+        if image_filenames:
+            media = []
+            for image_filename in image_filenames:
+                with open(os.path.join(image_dir, image_filename), 'rb') as f:
+                    media.append(types.InputMediaPhoto(f.read()))
+            if media:
+                bot.send_media_group(chat_id, media)
+                
+    return text
+
+def prepare_product_text(product: Dict[str, Any], content_cfg: ContentConfig, logger: Logger) -> str:
+    logger.debug("prepare_product_text CALL")
+    
     name = product['name']
     article_number = product['article_number']
     description = product['description']
@@ -146,7 +177,6 @@ def process_product(
     category = product['category']
     production_time = product['production_time']
     prod_limit = product['prod_limit']
-    image_dir = product['image_dir']
     materials_list = product['materials_list']
     
     text = content_cfg.get_product_details_text(
@@ -166,14 +196,20 @@ def process_product(
         )
     )
     
-    if os.path.exists(image_dir):
-        image_filenames = os.listdir(image_dir)
-        if image_filenames:
-            media = []
-            for image_filename in image_filenames:
-                with open(os.path.join(image_dir, image_filename), 'rb') as f:
-                    media.append(types.InputMediaPhoto(f.read()))
-            if media:
-                bot.send_media_group(chat_id, media)
-                
+    return text
+
+def prepare_product_info(call, bot: TeleBot, db: Storage, content_cfg: ContentConfig, logger: Logger, article_number: int) -> str:
+    product = db.get_product_by_article_number(article_number)
+    
+    if not product:
+        bot.send_message(call.message.chat.id, content_cfg.product.not_found.message)
+        return
+    
+    text = process_product(
+        product,
+        bot,
+        call.message.chat.id,
+        content_cfg,
+        logger
+    )
     return text

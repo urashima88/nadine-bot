@@ -1,5 +1,6 @@
 import os
 from logging import Logger
+from typing import Tuple
 
 from telebot import TeleBot, types
 
@@ -14,12 +15,17 @@ from src.keyboards import (
     admin_catalog_category_menu_keyboard,
     admin_catalog_control_show_mode_keyboard,
     admin_catalog_product_keyboard,
-    admin_main_menu_keyboard
+    admin_main_menu_keyboard,
+    catalog_edit_product_keyboard
 )
-from src.states.catalog_session import set_catalog_session, delete_catalog_session, get_catalog_session
+from src.states.catalog_session import (
+    set_catalog_session, 
+    delete_catalog_session, 
+    get_catalog_session
+)
 from src.utils.wrappers import error_handler
-from src.utils.content import get_production_time_days_ru_format
-from src.handlers.shared import process_product
+from src.handlers.shared import process_product, prepare_product_text, prepare_product_info
+from src.utils.clean import delete_message
 
 def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: ContentConfig,  logger: Logger):
     err_handler = error_handler(bot, content_cfg, logger)
@@ -337,3 +343,128 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             content_cfg.cart.main_menu.message,
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_product_'))
+    @err_handler
+    def edit_product(call):
+        logger.debug("edit_product CALL")
+            
+        article_number = int(call.data.split('_')[2])
+        text = prepare_product_info(call, bot, db, content_cfg, logger, article_number)
+        
+        bot.send_message(
+            call.message.chat.id,
+            text=text,
+            reply_markup=catalog_edit_product_keyboard(content_cfg, article_number),
+            parse_mode="Markdown"
+        )
+        
+    def edit_product_text(article_number: int, chat_id: int, product_message_id: int) -> Tuple[bool, str]:
+        logger.debug("edit_product_text CALL")
+        
+        product = db.get_product_by_article_number(article_number)
+    
+        if not product:
+            return False, content_cfg.catalog.admin.edit.not_found.message
+        
+        product_text = prepare_product_text(product, content_cfg, logger)
+        
+        bot.edit_message_text(
+            product_text,
+            chat_id,
+            product_message_id,
+            parse_mode="Markdown"
+        )
+        return True, ""
+        
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_name_"))
+    @err_handler
+    def edit_name(call):
+        logger.debug("edit_name CALL")
+        
+        article_number = int(call.data.split('_')[2])
+        product_message_id = call.message.id
+
+        prompt = content_cfg.catalog.admin.edit.name.text
+        message = bot.send_message(call.message.chat.id, prompt)
+        bot.register_next_step_handler(
+            message,
+            save_name,
+            article_number,
+            product_message_id
+        )
+        
+    def save_name(message, article_number: int, product_message_id: int):
+        logger.debug("save_name CALL")
+        
+        new_name = message.text.strip()
+        if not new_name:
+            return False, content_cfg.catalog.admin.edit.empty_value.message
+
+        success = db.update_product_name(article_number, new_name)
+        
+        if success:
+            edit_success, msg = edit_product_text(
+                article_number,
+                message.chat.id,
+                product_message_id
+            )
+            
+            delete_message(bot, message.chat.id, message.message_id, logger)
+            if edit_success:
+                bot.send_message(
+                    message.chat.id, 
+                    content_cfg.catalog.admin.edit.name.success.message,
+                    parse_mode="Markdown",
+                    reply_markup=catalog_edit_product_keyboard(content_cfg, article_number)
+                )
+            else:
+                bot.send_message(message.chat.id, msg)
+        else:
+            bot.send_message(message.chat.id, content_cfg.catalog.admin.edit.name.update_error.message)
+    
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("edit_description_"))
+    @err_handler
+    def edit_description(call):
+        logger.debug("edit_description CALL")
+        
+        article_number = int(call.data.split('_')[2])
+        product_message_id = call.message.id
+
+        prompt = content_cfg.catalog.admin.edit.description.text
+        message = bot.send_message(call.message.chat.id, prompt)
+        bot.register_next_step_handler(
+            message,
+            save_description,
+            article_number,
+            product_message_id
+        )
+        
+    def save_description(message, article_number: int, product_message_id: int):
+        logger.debug("save_description CALL")
+        
+        new_description = message.text.strip()
+        if not new_description:
+            return False, content_cfg.catalog.admin.edit.empty_value.message
+
+        success = db.update_product_description(article_number, new_description)
+        
+        if success:
+            edit_success, msg = edit_product_text(
+                article_number,
+                message.chat.id,
+                product_message_id
+            )
+            
+            delete_message(bot, message.chat.id, message.message_id, logger)
+            if edit_success:
+                bot.send_message(
+                    message.chat.id, 
+                    content_cfg.catalog.admin.edit.description.success.message,
+                    parse_mode="Markdown",
+                    reply_markup=catalog_edit_product_keyboard(content_cfg, article_number)
+                )
+            else:
+                bot.send_message(message.chat.id, msg)
+        else:
+            bot.send_message(message.chat.id, content_cfg.catalog.admin.edit.description.update_error.message)

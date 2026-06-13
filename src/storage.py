@@ -804,3 +804,25 @@ class Storage:
                     ORDER BY p.article_number;
                 """, (category,))
                 return cur.fetchall()
+            
+    def update_product_name(self, article_number: int, new_name: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE products
+                    SET name = %s, updated_at = NOW()
+                    WHERE article_number = %s
+                    RETURNING id
+                """, (new_name, article_number))
+                return cur.fetchone() is not None
+            
+    def update_product_description(self, article_number: int, new_description: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE products
+                    SET description = %s, updated_at = NOW()
+                    WHERE article_number = %s
+                    RETURNING id
+                """, (new_description, article_number))
+                return cur.fetchone() is not None

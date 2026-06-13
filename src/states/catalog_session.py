@@ -16,5 +16,4 @@ def set_catalog_session(user_id: int, products: List[Dict], category: str):
 def delete_catalog_session(user_id: int):
     if user_id in user_catalog_show_sessions:
         del user_catalog_show_sessions[user_id]
-        
     

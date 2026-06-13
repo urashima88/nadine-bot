@@ -253,23 +253,22 @@ def admin_catalog_control_show_mode_keyboard(content_cfg: ContentConfig):
 def admin_catalog_product_keyboard(content_cfg: ContentConfig, article_number: int):
     markup = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.message, callback_data=f'edit_product_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.message, callback_data=f'edit_product_{article_number}'),
     ]
     markup.add(*buttons)
     return markup
 
-def edit_product_keyboard(content_cfg: ContentConfig, article_number: int):
+def catalog_edit_product_keyboard(content_cfg: ContentConfig, article_number: int):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.name.message, callback_data=f'edit_name_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.article_number.message, callback_data=f'edit_article_number_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.description.message, callback_data=f'edit_description_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.price.message, callback_data=f'edit_price_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.category.message, callback_data=f'edit_category_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.production_time.message, callback_data=f'edit_production_time_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.prod_limit.message, callback_data=f'edit_prod_limit_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.materials.message, callback_data=f'edit_materials_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.product.admin.edit.images.message, callback_data=f'edit_imagesimages_{article_number}')
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.name.message, callback_data=f'edit_name_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.description.message, callback_data=f'edit_description_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.price.message, callback_data=f'edit_price_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.category.message, callback_data=f'edit_category_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.production_time.message, callback_data=f'edit_production_time_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.prod_limit.message, callback_data=f'edit_prod_limit_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.materials.message, callback_data=f'edit_materials_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.images.message, callback_data=f'edit_images_{article_number}')
     ]
     markup.add(*buttons)
     return markup
