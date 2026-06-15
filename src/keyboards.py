@@ -1,4 +1,5 @@
 from telebot import types
+from typing import List
 
 from src.config.content_config import ContentConfig
 
@@ -264,11 +265,50 @@ def catalog_edit_product_keyboard(content_cfg: ContentConfig, article_number: in
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.name.message, callback_data=f'edit_name_{article_number}'),
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.description.message, callback_data=f'edit_description_{article_number}'),
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.price.message, callback_data=f'edit_price_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.materials.message, callback_data=f'edit_materials_{article_number}'),
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.category.message, callback_data=f'edit_category_{article_number}'),
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.production_time.message, callback_data=f'edit_production_time_{article_number}'),
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.prod_limit.message, callback_data=f'edit_prod_limit_{article_number}'),
-        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.materials.message, callback_data=f'edit_materials_{article_number}'),
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.images.message, callback_data=f'edit_images_{article_number}')
     ]
+    
+    markup.add(*buttons)
+    return markup
+
+def catalog_edit_product_category_keyboard(content_cfg: ContentConfig, article_number: int):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.bracelets.message, callback_data=f'choose_bracelets_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.earrings.message, callback_data=f'choose_earrings_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.necklaces.message, callback_data=f'choose_necklaces_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.brooches.message, callback_data=f'choose_brooches_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.pendants.message, callback_data=f'choose_pendants_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.chains.message, callback_data=f'choose_chains_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.rings.message, callback_data=f'choose_rings_{article_number}')
+    ]
+    markup.add(*buttons)
+    return markup
+
+def catalog_edit_product_images_keyboard(content_cfg: ContentConfig, article_number: int, image_quantity: int):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    buttons = []
+    for i in range(image_quantity):
+        image_number = i+1
+        image_idx = i
+        buttons.extend([
+            types.InlineKeyboardButton(
+                content_cfg.get_catalog_admin_edit_images_current_message(image_number=image_number),
+                callback_data=f"edit_image_{article_number}_{image_idx}"
+            ),
+            types.InlineKeyboardButton(
+                content_cfg.get_catalog_admin_edit_images_current_delete_message(image_number=image_number),
+                callback_data=f"delete_image_{article_number}_{image_idx}"
+            )
+        ])
+    
+    buttons.append(
+        types.InlineKeyboardButton(content_cfg.catalog.admin.edit.images.add.message, callback_data=f"add_image_{article_number}")
+    )
+    
     markup.add(*buttons)
     return markup

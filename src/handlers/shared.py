@@ -4,6 +4,7 @@ import re
 from typing import List, Dict, Any, Tuple
 
 from telebot import TeleBot, types
+from telebot.types import Message
 
 from src.storage import Storage
 from src.config.content_config import ContentConfig
@@ -144,7 +145,7 @@ def process_product(
     chat_id: int, 
     content_cfg: ContentConfig, 
     logger: Logger
-) -> str:
+) -> Tuple[str, List[Message]]:
     logger.debug("process_product CALL")
     
     text = prepare_product_text(
@@ -154,6 +155,7 @@ def process_product(
     )
     
     image_dir = product['image_dir']
+    image_messages: List[Message] = []
     
     if os.path.exists(image_dir):
         image_filenames = os.listdir(image_dir)
@@ -163,9 +165,9 @@ def process_product(
                 with open(os.path.join(image_dir, image_filename), 'rb') as f:
                     media.append(types.InputMediaPhoto(f.read()))
             if media:
-                bot.send_media_group(chat_id, media)
+                image_messages = bot.send_media_group(chat_id, media)
                 
-    return text
+    return text, image_messages
 
 def prepare_product_text(product: Dict[str, Any], content_cfg: ContentConfig, logger: Logger) -> str:
     logger.debug("prepare_product_text CALL")
@@ -198,18 +200,25 @@ def prepare_product_text(product: Dict[str, Any], content_cfg: ContentConfig, lo
     
     return text
 
-def prepare_product_info(call, bot: TeleBot, db: Storage, content_cfg: ContentConfig, logger: Logger, article_number: int) -> str:
+def prepare_product_info(
+    chat_id: int, 
+    bot: TeleBot, 
+    db: Storage, 
+    content_cfg: ContentConfig, 
+    logger: Logger, 
+    article_number: int
+) -> Tuple[str, List[Message]]:
     product = db.get_product_by_article_number(article_number)
     
     if not product:
-        bot.send_message(call.message.chat.id, content_cfg.product.not_found.message)
+        bot.send_message(chat_id, content_cfg.product.not_found.message)
         return
     
-    text = process_product(
+    text, image_messages = process_product(
         product,
         bot,
-        call.message.chat.id,
+        chat_id,
         content_cfg,
         logger
     )
-    return text
+    return text, image_messages

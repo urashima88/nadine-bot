@@ -322,9 +322,22 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         )
         
     def add_delivery_price(message, order_id: str):
-        new_value = float(message.text.strip().replace(',', '.'))
+        new_value = message.text.strip().replace(',', '.')
         if not new_value:
-            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.incorrect_value.message)
+            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.empty_value.message)
+            return
+        
+        try:
+            new_value = float(new_value)
+        except:
+            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.not_number.message)
+            return
+        
+        if new_value < 0:
+            bot.send_message(
+                message.chat.id,
+                content_cfg.order.admin.new.set_delivery_price.negative.message
+            )
             return
         
         success = db.set_delivery_price(order_id, new_value)

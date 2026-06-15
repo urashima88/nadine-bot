@@ -158,7 +158,7 @@ class ContentConfig:
             "edit": {
                 "message": "✏️ Изменить артикул",
                 "name": {
-                    "message": "✏️ Изменить название",
+                    "message": "Изменить название",
                     "text": "Введите название артикула:",
                     "success": {
                         "message": "✅ Название артикула было успешно обновлено."
@@ -168,7 +168,7 @@ class ContentConfig:
                     }
                 },
                 "description": {
-                    "message": "✏️ Изменить описание",
+                    "message": "Изменить описание",
                     "text": "Введите описание артикула:",
                     "success": {
                         "message": "✅ Описание артикула было успешно обновлено."
@@ -178,18 +178,24 @@ class ContentConfig:
                     }
                 },
                 "price": {
-                    "message": "✏️ Изменить цену",
+                    "message": "Изменить цену",
                     "text": "Введите цену артикула:",
                     "success": {
                         "message": "✅ Цена артикула была успешно обновлена."
                     },
                     "update_error": {
                         "message": "❌ Ошибка обновления цены артикула. Попробуйте позже."
+                    },
+                    "not_number": {
+                        "message": "❌ Значение должно быть целым числом или числом с плавающей точкой."
+                    },
+                    "negative": {
+                        "message": "❌ Значение цены aртикула не может быть отрицательным."
                     }
                 },
                 "category": {
-                    "message": "✏️ Изменить категорию",
-                    "text": "Введите категорию артикула:",
+                    "message": "Изменить категорию",
+                    "text": "Выберите категорию из списка ниже:",
                     "success": {
                         "message": "✅ Категория артикула была успешно обновлена."
                     },
@@ -198,30 +204,51 @@ class ContentConfig:
                     }
                 },
                 "production_time": {
-                    "message": "✏️ Изменить время изготовления",
+                    "message": "Изменить время изготовления",
                     "text": (
-                        "Введите время изготовления артикула в формате 'минимум дней - максимум дней' (например, '1 - 2', также допустимо '1-2') или"
-                        "просто в формате 'максимум дней' (например, 3):"
+                        "Введите время изготовления артикула в формате 'минимум дней - максимум дней' (например, '1 - 2', также допустимо '1-2') или просто в формате 'максимум дней' (например, 3):"
                     ),
                     "success": {
                         "message": "✅ Время изготовления артикула было успешно обновлено."
                     },
                     "update_error": {
-                        "message": "❌ Ошибка обновления времени изготовления артикула. Попробуйте позже."
+                        "message": "Ошибка обновления времени изготовления артикула. Попробуйте позже."
+                    },
+                    "lower": {
+                        "not_number": {
+                            "message": "❌ Значение нижней границы времени изготовления артикула должно быть целым числом."
+                        },
+                        "negative": {
+                            "message": "❌ Значение нижней границы времени изготовления артикула не может быть отрицательным."
+                        }
+                    },
+                    "upper": {
+                        "not_number": {
+                            "message": "❌ Значение верхней границы времени изготовления артикула должно быть целым числом."
+                        },
+                        "negative": {
+                            "message": "❌ Значение верхней границы времени изготовления артикула не может быть отрицательным."
+                        }
                     }
                 },
                 "prod_limit": {
-                    "message": "✏️ Изменить максимум в одном заказе",
+                    "message": "Изменить максимум в одном заказе",
                     "text": "Введите максимально допустимое число товаров данного типа в одном заказе:",
                     "success": {
                         "message": "✅ Максимум в одном заказе был успешно обновлён."
                     },
                     "update_error": {
                         "message": "❌ Ошибка обновления максимально допустимого числа товаров данного типа в одном заказе. Попробуйте позже."
+                    },
+                    "not_number": {
+                        "message": "❌ Значение максимума в одном заказе должно быть целым числом."
+                    },
+                    "negative": {
+                        "message": "❌ Значение максимума в одном заказе не может быть отрицательным."
                     }
                 },
                 "materials": {
-                    "message": "✏️ Изменить материалы",
+                    "message": "Изменить материалы",
                     "text": "Введите названия материалов через ',':",
                     "success": {
                         "message": "✅ Материалы были успешно обновлены."
@@ -231,11 +258,46 @@ class ContentConfig:
                     }
                 },
                 "images": {
-                    "message": "✏️ Изменить изображения",
-                    "text": "Загрузите изображения:",
-                    "success": {
-                        "message": "✅ Изображения были успешно загружены."
+                    "message": "Изменить изображения",
+                    "text": "Выберите действие из меню ниже:",
+                    "add": {
+                        "message": "Добавить изображение",
+                        "text": "Загрузите изображение:",
+                        "incorrect_file_format": {
+                            "message": "❌ Неверный формат файла(ов)."
+                        },
+                        "exceed_limit": {
+                            "message": "⚠️ Вы превысили лимит изображений на артикул (максимум 10 изображений)."
+                        },
+                        "failed_to_load": {
+                            "message": "❌ Не удалось загрузить изображение. Попробуйте позже."
+                        },
+                        "success": {
+                            "message": "✅ Изображение было успешно загружено."
+                        },
                     },
+                    "current": {
+                        "message": "Изменить изображение №{image_number}",
+                        "text": "Загрузите изображение:",
+                        "incorrect_file_format": {
+                            "message": "❌ Неверный формат файла."
+                        },
+                        "failed_to_load": {
+                            "message": "❌ Не удалось загрузить изображение. Попробуйте позже."
+                        },
+                        "success": {
+                            "message": "✅ Изображение №{image_number} было успешно заменено на новое."
+                        },
+                        "delete": {
+                            "message": "Удалить изображение №{image_number}",
+                            "success": {
+                                "message": "✅ Изображение было успешно удалено."
+                            },
+                            "error": {
+                                "message": "❌ Не удалось удалить файл."
+                            }
+                        }
+                    }
                 },
                 "empty_value": {
                     "message": "❌ Значение не может быть пустым."
@@ -343,7 +405,7 @@ class ContentConfig:
             },
             "edit": {
                 "full_name": {
-                    "message": "✏️ Изменить ФИО",
+                    "message": "Изменить ФИО",
                     "text": "Введите ФИО:",
                     "success": {
                         "message": "✅ ФИО было успешно обновлено."
@@ -353,7 +415,7 @@ class ContentConfig:
                     }
                 },
                 "phone": {
-                    "message": "✏️ Изменить телефон",
+                    "message": "Изменить телефон",
                     "text": "Введите номер телефона:",
                     "success": {
                         "message": "✅ Номер телефона был успешно обновлён."
@@ -366,7 +428,7 @@ class ContentConfig:
                     }
                 },
                 "timezone": {
-                    "message": "✏️ Изменить часовой пояс",
+                    "message": "Изменить часовой пояс",
                     "text": "Введите ваш часовой пояс в формате ±число, где число – смещение от UTC (целое число, например, +3, -5, 0):",
                     "success": {
                         "message": "✅ Часовой пояс был успешно обновлён."
@@ -382,7 +444,7 @@ class ContentConfig:
                     }
                 },
                 "delivery_company": {
-                    "message": "✏️ Изменить службу доставки",
+                    "message": "Изменить службу доставки",
                     "text": "Введите название службы доставки (например, Яндекс Доставка):",
                     "success": {
                         "message": "✅ Служба доставки была успешно обновлена."
@@ -398,7 +460,7 @@ class ContentConfig:
                     }
                 },
                 "delivery_point_address": {
-                    "message": "✏️ Изменить адрес пункта выдачи",
+                    "message": "Изменить адрес пункта выдачи",
                     "text": "Введите адрес пункта выдачи (например, г. Москва, Долгоруковская улица, 40):",
                     "success": {
                         "message": "✅ Адрес пункта выдачи был успешно обновлён."
@@ -454,7 +516,7 @@ class ContentConfig:
                 "💰 *Цена:* {price} ₽\n"
                 "⛓️ *Материалы:* {materials}\n"
                 "🏷️ *Категория:* {category}\n"
-                "🕒 *Время изготовления:* {production_time} {production_time_units}\n"
+                "🕒 *Время изготовления:* {production_time_text} {production_time_units}\n"
                 "📦 *Максимум товаров в одном заказе:* {prod_limit}\n"
             ),
             "message": "📋 Подробнее"
@@ -516,7 +578,7 @@ class ContentConfig:
                         "💰 *Цена:* {price} ₽ x {quantity} = {product_total} ₽\n"
                         "⛓️ *Материалы:* {materials}\n"
                         "🏷️ *Категория:* {category}\n"
-                        "🕒 *Время изготовления:* {production_time} {production_time_units}"
+                        "🕒 *Время изготовления:* {production_time_text} {production_time_units}"
                     )
                 }
             },
@@ -537,8 +599,14 @@ class ContentConfig:
                 "set_delivery_price": {
                     "message": "💰 Ввести стоимость доставки",
                     "text": "Введите стоимость доставки:",
-                    "incorrect_value": {
-                        "message": "❌ Заданное значение некорректно."
+                    "empty_value": {
+                        "message": "❌ Значение не может быть пустым."
+                    },
+                    "not_number": {
+                        "message": "❌ Значение стоимости доставки должно быть целым числом или числом с плавающей точкой."
+                    },
+                    "negative": {
+                        "message": "❌ Значение стоимости доставки не может быть отрицательным."
                     },
                     "success": {
                         "message": "✅ Стоимость доставки была успешно обновлена."
@@ -595,7 +663,7 @@ class ContentConfig:
                 "send": {
                     "for_payment": {
                         "message": "💳 Отправить на оплату",
-                        "text": "Отправьте файл счёта на оплату (документ или изображение):",
+                        "text": "Загрузите файл счёта на оплату (документ или изображение):",
                         "success": {
                             "message": "✅ Инвойс для заказа №{order_number} отправлен пользователю."
                         }
@@ -603,7 +671,7 @@ class ContentConfig:
                     "receipt": {
                         "message": "🧾 Отправить чек",
                         "file": {
-                            "text": "Отправьте файл чека (документ или изображение):",
+                            "text": "Загрузите файл чека (документ или изображение):",
                         },
                         "delivery_info": {
                             "text": "Введите данные о доставке:",
@@ -844,6 +912,18 @@ class ContentConfig:
             number_products=number_products
         )
         
+    @classmethod
+    def get_catalog_admin_edit_images_current_message(cls, image_number: int):
+        return cls.catalog.admin.edit.images.current.message.format(image_number=image_number)
+    
+    @classmethod
+    def get_catalog_admin_edit_images_current_delete_message(cls, image_number: int):
+        return cls.catalog.admin.edit.images.current.delete.message.format(image_number=image_number)
+    
+    @classmethod
+    def get_catalog_admin_edit_images_current_success_message(cls, image_number: int):
+        return cls.catalog.admin.edit.images.current.success.message.format(image_number=image_number)
+        
     # common
     
     @classmethod
@@ -951,6 +1031,12 @@ class ContentConfig:
         prod_limit: int,
         production_time_units: str
     ):
+        
+        if production_time.upper-1 - production_time.lower == 0:
+            production_time_text = f"{production_time.upper-1}"
+        else:
+            production_time_text = f"{production_time.lower}-{production_time.upper-1}"
+        
         return cls.product.details.text.format(
             name=name.capitalize(),
             article_number=article_number,
@@ -958,7 +1044,7 @@ class ContentConfig:
             price=round(float(price), 2),
             materials=materials,
             category=category,
-            production_time=f"{production_time.lower}-{production_time.upper}",
+            production_time_text=production_time_text,
             prod_limit=prod_limit,
             production_time_units=production_time_units
         )
@@ -995,6 +1081,11 @@ class ContentConfig:
         production_time: NumericRange,
         production_time_units: str
     ):
+        if production_time.upper-1 - production_time.lower == 0:
+            production_time_text = f"{production_time.upper-1}"
+        else:
+            production_time_text = f"{production_time.lower}-{production_time.upper-1}"
+        
         return cls.order.admin.product.details.text.format(
             name=name.capitalize(),
             article_number=article_number,
@@ -1003,7 +1094,7 @@ class ContentConfig:
             product_total=round(float(product_total), 2),
             materials=materials,
             category=category,
-            production_time=f"{production_time.lower}-{production_time.upper}",
+            production_time_text=production_time_text,
             production_time_units=production_time_units
         )
         

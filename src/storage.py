@@ -5,6 +5,7 @@ from enum import IntEnum
 
 import psycopg2
 from psycopg2 import pool, sql, extras
+from psycopg2.extras import NumericRange
 
 class AddToCartResult(IntEnum):
     SUCCESS = 0
@@ -826,3 +827,65 @@ class Storage:
                     RETURNING id
                 """, (new_description, article_number))
                 return cur.fetchone() is not None
+            
+    def update_product_price(self, article_number: int, new_price: float) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE products
+                    SET price = %s, updated_at = NOW()
+                    WHERE article_number = %s
+                    RETURNING id
+                """, (new_price, article_number))
+                return cur.fetchone() is not None
+            
+    def update_product_category(self, article_number: int, new_category: str) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE products
+                    SET category = %s, updated_at = NOW()
+                    WHERE article_number = %s
+                    RETURNING id
+                """, (new_category, article_number))
+                return cur.fetchone() is not None
+            
+    def update_product_production_time(self, article_number: int, new_production_time: NumericRange) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    UPDATE products
+                    SET production_time = %s, updated_at = NOW()
+                    WHERE article_number = %s
+                    RETURNING id
+                """, (new_production_time, article_number))
+                return cur.fetchone() is not None
+            
+    def update_product_materials(self, article_number: int, new_materials: List[str]) -> bool:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    DELETE FROM product_materials
+                    WHERE product_id = (SELECT id FROM products WHERE article_number = %s)
+                """, (article_number,))
+                cur.execute("""
+                    INSERT INTO materials (name)
+                    SELECT unnest(%s::text[])
+                    ON CONFLICT (name) DO NOTHING
+                """, (new_materials,))
+                cur.execute("""
+                    INSERT INTO product_materials (product_id, material_id)
+                    SELECT p.id, m.id
+                    FROM (SELECT id FROM products WHERE article_number = %s) p
+                    CROSS JOIN (SELECT id FROM materials WHERE name = ANY(%s::text[])) m
+                """, (article_number, new_materials))
+                return True
+            
+    def get_product_image_dir(self, article_number: int) -> Optional[str]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT image_dir FROM products WHERE article_number = %s
+                """, (article_number,))
+                row = cur.fetchone()
+                return row['image_dir'] if row else None
