@@ -203,11 +203,12 @@ def admin_main_menu_keyboard(content_cfg: ContentConfig):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = [
         types.KeyboardButton(content_cfg.catalog.admin.message),
-        types.KeyboardButton(content_cfg.product.admin.add.message),
+        types.KeyboardButton(content_cfg.product.admin.create.message),
         types.KeyboardButton(content_cfg.order.admin.all.message),
         types.KeyboardButton(content_cfg.common.admin.user_data.all.message),
         types.KeyboardButton(content_cfg.stats.admin.message),
-        types.KeyboardButton(content_cfg.common.admin.personal_data.message)
+        types.KeyboardButton(content_cfg.common.admin.personal_data.message),
+        types.KeyboardButton(content_cfg.settings.admin.message)
     ]
     markup.add(*buttons)
     return markup
@@ -310,5 +311,50 @@ def catalog_edit_product_images_keyboard(content_cfg: ContentConfig, article_num
         types.InlineKeyboardButton(content_cfg.catalog.admin.edit.images.add.message, callback_data=f"add_image_{article_number}")
     )
     
+    markup.add(*buttons)
+    return markup
+
+def product_create_keyboard(content_cfg: ContentConfig, article_number: int):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.bracelets.message, callback_data=f'choose_bracelets_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.earrings.message, callback_data=f'choose_earrings_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.necklaces.message, callback_data=f'choose_necklaces_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.brooches.message, callback_data=f'choose_brooches_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.pendants.message, callback_data=f'choose_pendants_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.chains.message, callback_data=f'choose_chains_{article_number}'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.rings.message, callback_data=f'choose_rings_{article_number}')
+    ]
+    markup.add(*buttons)
+    return markup
+
+def product_create_keyboard(content_cfg: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.product.admin.create.name.message, callback_data=f'add_name'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.description.message, callback_data=f'add_description'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.price.message, callback_data=f'add_price'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.materials.message, callback_data=f'add_materials'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.category.message, callback_data=f'add_category'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.production_time.message, callback_data=f'add_production_time'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.prod_limit.message, callback_data=f'add_prod_limit'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.images.add.message, callback_data=f'create_add_image'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.clear.message, callback_data=f'clear_product'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.complete.message, callback_data=f'complete_product')
+    ]
+    markup.add(*buttons)
+    return markup
+    
+def product_choose_category_keyboard(content_cfg: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.bracelets.message, callback_data=f'create_choose_bracelets'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.earrings.message, callback_data=f'create_choose_earrings'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.necklaces.message, callback_data=f'create_choose_necklaces'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.brooches.message, callback_data=f'create_choose_brooches'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.pendants.message, callback_data=f'create_choose_pendants'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.chains.message, callback_data=f'create_choose_chains'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.rings.message, callback_data=f'create_choose_rings')
+    ]
     markup.add(*buttons)
     return markup

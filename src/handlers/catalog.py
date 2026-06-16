@@ -29,7 +29,17 @@ from src.states.catalog_session import (
     set_edit_product_catalog_session
 )
 from src.utils.wrappers import error_handler
-from src.handlers.shared import process_product, prepare_product_text, prepare_product_info
+from src.handlers.shared import (
+    process_product, 
+    prepare_product_text, 
+    prepare_product_info,
+    check_price,
+    check_production_time,
+    check_prod_limit,
+    PriceCheckResult,
+    ProductionTimeCheckResult,
+    ProdLimitCheckResult
+)
 from src.utils.clean import delete_message
 from src.utils.file import download_image_bytes
 
@@ -416,19 +426,16 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             return
         
         article_number = int(call.data.split('_')[2])
-        
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
 
         prompt = content_cfg.catalog.admin.edit.name.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
             save_name,
-            article_number,
-            product_message_id
+            article_number
         )
         
-    def save_name(message, article_number: int, product_message_id: int):
+    def save_name(message, article_number: int):
         logger.debug("save_name CALL")
         
         user_id = message.from_user.id
@@ -449,6 +456,8 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         success = db.update_product_name(article_number, new_name)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 message.chat.id,
@@ -481,18 +490,15 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             bot.send_message(call.message.chat.id, content_cfg.catalog.session_not_found.message)
             return
         
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
-
         prompt = content_cfg.catalog.admin.edit.description.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
             save_description,
-            article_number,
-            product_message_id
+            article_number
         )
         
-    def save_description(message, article_number: int, product_message_id: int):
+    def save_description(message, article_number: int):
         logger.debug("save_description CALL")
         
         user_id = message.from_user.id
@@ -513,6 +519,8 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         success = db.update_product_description(article_number, new_description)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 message.chat.id,
@@ -543,19 +551,16 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         if not session:
             bot.send_message(call.message.chat.id, content_cfg.catalog.session_not_found.message)
             return
-        
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
-
+    
         prompt = content_cfg.catalog.admin.edit.price.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
             save_price,
-            article_number,
-            product_message_id
+            article_number
         )
         
-    def save_price(message, article_number: int, product_message_id: int):
+    def save_price(message, article_number: int):
         logger.debug("save_price CALL")
         
         user_id = message.from_user.id
@@ -573,19 +578,19 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             )
             return
         
-        try:
-            new_price = float(new_price)
-        except:
+        check_result, new_price = check_price(new_price, logger)
+        if check_result == PriceCheckResult.NOT_NUMBER:
             bot.send_message(message.chat.id, content_cfg.catalog.admin.edit.price.not_number.message)
             return
-        
-        if new_price < 0:
+        elif check_result == PriceCheckResult.NEGATIVE:
             bot.send_message(message.chat.id, content_cfg.catalog.admin.edit.price.negative.message)
             return
 
         success = db.update_product_price(article_number, new_price)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 message.chat.id,
@@ -638,13 +643,13 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         if not session:
             bot.send_message(call.message.chat.id, content_cfg.catalog.session_not_found.message)
             return
-        
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
 
         new_category = content_cfg.catalog.eng2ru_category_map[new_category]
         success = db.update_product_category(article_number, new_category)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 call.message.chat.id,
@@ -675,18 +680,15 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             bot.send_message(call.message.chat.id, content_cfg.catalog.session_not_found.message)
             return
         
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
-
         prompt = content_cfg.catalog.admin.edit.production_time.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
             save_production_time,
-            article_number,
-            product_message_id
+            article_number
         )
         
-    def save_production_time(message, article_number: int, product_message_id: int):
+    def save_production_time(message, article_number: int):
         logger.debug("save_production_time CALL")
         
         user_id = message.from_user.id
@@ -703,65 +705,38 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
                 content_cfg.catalog.admin.edit.empty_value.message
             )
             return
-        
-        if '-' in new_production_time_str:
-            parts = new_production_time_str.split('-')
-            try:
-                lower = int(parts[0].strip())
-            except:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.catalog.admin.edit.production_time.lower.not_number.message
-                )
-                return
             
-            if lower < 0:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.catalog.admin.edit.production_time.lower.negative.message
-                )
-                return
-            
-            try:
-                upper = int(parts[1].strip())
-            except:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.catalog.admin.edit.production_time.upper.not_number.message
-                )
-                return
-            
-            if upper < 0:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.catalog.admin.edit.production_time.upper.negative.message
-                )
-                return
-            
-            new_production_time = NumericRange(lower, upper, bounds="[]")
-
-        else:
-            try:
-                upper = int(new_production_time_str)
-            except:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.catalog.admin.edit.production_time.upper.not_number.message
-                )
-                return
-            
-            if upper < 0:
-                bot.send_message(
-                    message.chat.id,
-                    content_cfg.catalog.admin.edit.production_time.upper.negative.message
-                )
-                return
-            
-            new_production_time = NumericRange(upper, upper, bounds="[]")
+        check_result, new_production_time = check_production_time(new_production_time_str)
+        if check_result == ProductionTimeCheckResult.LOWER_NOT_NUMBER:
+            bot.send_message(
+                message.chat.id,
+                content_cfg.catalog.admin.edit.production_time.lower.not_number.message
+            )
+            return
+        elif check_result == ProductionTimeCheckResult.LOWER_NEGATIVE:
+            bot.send_message(
+                message.chat.id,
+                content_cfg.catalog.admin.edit.production_time.lower.negative.message
+            )
+            return
+        elif check_result == ProductionTimeCheckResult.UPPER_NOT_NUMBER:
+            bot.send_message(
+                message.chat.id,
+                content_cfg.catalog.admin.edit.production_time.upper.not_number.message
+            )
+            return
+        elif check_result == ProductionTimeCheckResult.UPPER_NEGATIVE:
+            bot.send_message(
+                message.chat.id,
+                content_cfg.catalog.admin.edit.production_time.upper.negative.message
+            )
+            return
 
         success = db.update_product_production_time(article_number, new_production_time)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 message.chat.id,
@@ -793,18 +768,15 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             bot.send_message(call.message.chat.id, content_cfg.catalog.session_not_found.message)
             return
         
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
-
         prompt = content_cfg.catalog.admin.edit.prod_limit.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
             save_prod_limit,
-            article_number,
-            product_message_id
+            article_number
         )
         
-    def save_prod_limit(message, article_number: int, product_message_id: int):
+    def save_prod_limit(message, article_number: int):
         logger.debug("save_prod_limit CALL")
         
         user_id = message.from_user.id
@@ -822,19 +794,19 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             )
             return
         
-        try:
-            new_prod_limit = int(new_prod_limit)
-        except:
+        check_result, new_prod_limit = check_price(new_prod_limit, logger)
+        if check_result == ProdLimitCheckResult.NOT_NUMBER:
             bot.send_message(message.chat.id, content_cfg.catalog.admin.edit.prod_limit.not_number.message)
             return
-        
-        if new_prod_limit < 0:
+        elif check_result == ProdLimitCheckResult.NEGATIVE:
             bot.send_message(message.chat.id, content_cfg.catalog.admin.edit.prod_limit.negative.message)
             return
 
         success = db.update_product_price(article_number, new_prod_limit)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 message.chat.id,
@@ -864,19 +836,16 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         if not session:
             bot.send_message(call.message.chat.id, content_cfg.catalog.session_not_found.message)
             return
-        
-        product_message_id = session["edit_products"][article_number]["product_message_id"]
 
         prompt = content_cfg.catalog.admin.edit.materials.text
         message = bot.send_message(call.message.chat.id, prompt)
         bot.register_next_step_handler(
             message,
             save_materials,
-            article_number,
-            product_message_id
+            article_number
         )
         
-    def save_materials(message, article_number: int, product_message_id: int):
+    def save_materials(message, article_number: int):
         logger.debug("save_materials CALL")
         
         user_id = message.from_user.id
@@ -901,6 +870,8 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         success = db.update_product_materials(article_number, new_materials)
         
         if success:
+            product_message_id = session["edit_products"][article_number]["product_message_id"]
+            
             edit_success, msg = edit_product_text(
                 article_number,
                 message.chat.id,
@@ -1159,4 +1130,6 @@ def register_catalog_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             )
         )
         session["edit_products"][article_number]["edit_images_message_id"] = sent.message_id
+        
+    
         

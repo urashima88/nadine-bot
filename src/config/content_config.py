@@ -264,7 +264,7 @@ class ContentConfig:
                         "message": "Добавить изображение",
                         "text": "Загрузите изображение:",
                         "incorrect_file_format": {
-                            "message": "❌ Неверный формат файла(ов)."
+                            "message": "❌ Неверный формат файла."
                         },
                         "exceed_limit": {
                             "message": "⚠️ Вы превысили лимит изображений на артикул (максимум 10 изображений)."
@@ -533,8 +533,132 @@ class ContentConfig:
             "unit_other": "дней"
         },
         "admin": {
-            "add": {
-                "message": "🆕 Добавить артикул"
+            "create": {
+                "message": "🆕 Добавить артикул",
+                "session_not_found": {
+                    "message": "⚠️ Сессия не найдена. Начните заново из каталога"
+                },
+                "empty_value": {
+                    "message": "❌ Значение не может быть пустым."
+                },
+                "name": {
+                    "message": "Добавить название",
+                    "text": "Введите название артикула:",
+                    "success": {
+                        "message": "✅ Название артикула было успешно сохранено."
+                    }
+                },
+                "description": {
+                    "message": "Добавить описание",
+                    "text": "Введите описание артикула:",
+                    "success": {
+                        "message": "✅ Описание артикула было успешно сохранено."
+                    }
+                },
+                "price": {
+                    "message": "Добавить цену",
+                    "text": "Введите цену артикула:",
+                    "success": {
+                        "message": "✅ Цена артикула была успешно сохранена."
+                    },
+                    "not_number": {
+                        "message": "❌ Значение должно быть целым числом или числом с плавающей точкой."
+                    },
+                    "negative": {
+                        "message": "❌ Значение цены aртикула не может быть отрицательным."
+                    }
+                },
+                "category": {
+                    "message": "Добавить категорию",
+                    "text": "Выберите категорию из списка ниже:",
+                    "success": {
+                        "message": "✅ Категория артикула была успешно сохранена."
+                    }
+                },
+                "production_time": {
+                    "message": "Добавить время изготовления",
+                    "text": (
+                        "Введите время изготовления артикула в формате 'минимум дней - максимум дней' (например, '1 - 2', также допустимо '1-2') или просто в формате 'максимум дней' (например, 3):"
+                    ),
+                    "success": {
+                        "message": "✅ Время изготовления артикула было успешно сохранено."
+                    },
+                    "lower": {
+                        "not_number": {
+                            "message": "❌ Значение нижней границы времени изготовления артикула должно быть целым числом."
+                        },
+                        "negative": {
+                            "message": "❌ Значение нижней границы времени изготовления артикула не может быть отрицательным."
+                        }
+                    },
+                    "upper": {
+                        "not_number": {
+                            "message": "❌ Значение верхней границы времени изготовления артикула должно быть целым числом."
+                        },
+                        "negative": {
+                            "message": "❌ Значение верхней границы времени изготовления артикула не может быть отрицательным."
+                        }
+                    }
+                },
+                "prod_limit": {
+                    "message": "Добавить максимум в одном заказе",
+                    "text": "Введите максимально допустимое число товаров данного типа в одном заказе:",
+                    "success": {
+                        "message": "✅ Максимум в одном заказе был успешно сохранён."
+                    },
+                    "not_number": {
+                        "message": "❌ Значение максимума в одном заказе должно быть целым числом."
+                    },
+                    "negative": {
+                        "message": "❌ Значение максимума в одном заказе не может быть отрицательным."
+                    }
+                },
+                "materials": {
+                    "message": "Добавить материалы",
+                    "text": "Введите названия материалов через ',':",
+                    "success": {
+                        "message": "✅ Материалы были успешно сохранены."
+                    }
+                },
+                "images": {
+                    "add": {
+                        "message": "Добавить изображение",
+                        "text": "Загрузите изображение:",
+                        "incorrect_file_format": {
+                            "message": "❌ Неверный формат файла."
+                        },
+                        "exceed_limit": {
+                            "message": "⚠️ Вы превысили лимит изображений на артикул (максимум 10 изображений)."
+                        },
+                        "failed_to_load": {
+                            "message": "❌ Не удалось загрузить изображение. Попробуйте позже."
+                        },
+                        "success": {
+                            "message": "✅ Изображение было успешно загружено."
+                        }
+                    }
+                },
+                "clear": {
+                    "message": "🔄 Очистить данные артикула",
+                    "success": {
+                        "message": "✅ Данные артикула были успешно очищены."
+                    },
+                    "error": {
+                        "message": "❌ Не удалось очистить данные артикула. Попробуйте позже."
+                    }
+                },
+                "complete": {
+                    "message": "🏁 Завершить создание артикула",
+                    "success": {
+                        "message": "✅ Новый артикул был успешно создан."
+                    },
+                    "error": {
+                        "message": "❌ Не удалось создать новый артикул. Попробуйте позже."
+                    }
+                },
+                "empty_value": {
+                    "message": "❌ Значение не может быть пустым."
+                }
             }
         }
     })
@@ -862,6 +986,12 @@ class ContentConfig:
         }
     })
     
+    settings: edict = edict({
+        "admin": {
+            "message": "⚙️ Настройки"
+        }
+    })
+    
     db: edict = edict({
         "error": {
             "message": "⚠️ Ошибка базы данных. Попробуйте позже."
@@ -1031,11 +1161,12 @@ class ContentConfig:
         prod_limit: int,
         production_time_units: str
     ):
-        
-        if production_time.upper-1 - production_time.lower == 0:
-            production_time_text = f"{production_time.upper-1}"
-        else:
-            production_time_text = f"{production_time.lower}-{production_time.upper-1}"
+        production_time_text = ""
+        if production_time:
+            if production_time.upper-1 - production_time.lower == 0:
+                production_time_text = f"{production_time.upper-1}"
+            else:
+                production_time_text = f"{production_time.lower}-{production_time.upper-1}"
         
         return cls.product.details.text.format(
             name=name.capitalize(),
@@ -1043,7 +1174,7 @@ class ContentConfig:
             description=description,
             price=round(float(price), 2),
             materials=materials,
-            category=category,
+            category=category if category else "",
             production_time_text=production_time_text,
             prod_limit=prod_limit,
             production_time_units=production_time_units

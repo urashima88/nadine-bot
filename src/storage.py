@@ -889,3 +889,51 @@ class Storage:
                 """, (article_number,))
                 row = cur.fetchone()
                 return row['image_dir'] if row else None
+            
+    def get_max_article_number(self) -> int:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("SELECT MAX(article_number) AS max_article_number FROM products")
+                row = cur.fetchone()
+                return row['max_article_number'] if row and row['max_article_number'] is not None else 0
+            
+    def create_product(
+        self,
+        article_number: int,
+        name: str,
+        price: float,
+        category: str = None,
+        description: str = None,
+        production_time: NumericRange = None,
+        prod_limit: int = None,
+        image_dir: str = None
+    ) -> bool:
+
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                try:
+                    cur.execute("""
+                        INSERT INTO products (
+                            article_number, name, price, category,
+                            description, production_time, prod_limit, image_dir
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        article_number,
+                        name,
+                        price,
+                        category,
+                        description,
+                        production_time,
+                        prod_limit,
+                        image_dir
+                    ))
+                    conn.commit()
+                    return True
+                except psycopg2.IntegrityError as e:
+                    conn.rollback()
+                    self.logger.error(f"Integrity error while creating product: {e}")
+                    return False
+                except Exception as e:
+                    conn.rollback()
+                    self.logger.error(f"Error creating product: {e}")
+                    return False

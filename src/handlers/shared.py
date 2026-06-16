@@ -2,13 +2,32 @@ from logging import Logger
 import os
 import re
 from typing import List, Dict, Any, Tuple
+from enum import IntEnum
 
 from telebot import TeleBot, types
 from telebot.types import Message
+from psycopg2.extras import NumericRange
 
 from src.storage import Storage
 from src.config.content_config import ContentConfig
 from src.utils.content import get_production_time_days_ru_format
+
+class PriceCheckResult(IntEnum):
+    SUCCESS = 0
+    NOT_NUMBER = 1
+    NEGATIVE = 2
+    
+class ProductionTimeCheckResult(IntEnum):
+    SUCCESS = 0
+    LOWER_NOT_NUMBER = 1
+    LOWER_NEGATIVE = 2
+    UPPER_NOT_NUMBER = 3
+    UPPER_NEGATIVE = 4
+    
+class ProdLimitCheckResult(IntEnum):
+    SUCCESS = 0
+    NOT_NUMBER = 1
+    NEGATIVE = 2
 
 def get_cart_content(
     user_id: int, 
@@ -222,3 +241,63 @@ def prepare_product_info(
         logger
     )
     return text, image_messages
+
+def check_price(price_str: str, logger: Logger) -> Tuple[int, float]:
+    logger.debug("check_price CALL")
+    
+    try:
+        price = float(price_str)
+    except:
+        return PriceCheckResult.NOT_NUMBER, 0
+    
+    if price < 0:
+        return PriceCheckResult.NEGATIVE, 0
+    
+    return PriceCheckResult.SUCCESS, price
+
+def check_production_time(production_time_str: str) -> Tuple[int, NumericRange]:
+    if '-' in production_time_str:
+        parts = production_time_str.split('-')
+        try:
+            lower = int(parts[0].strip())
+        except:
+            return ProductionTimeCheckResult.LOWER_NOT_NUMBER, None
+        
+        if lower < 0:
+            return ProductionTimeCheckResult.LOWER_NEGATIVE, None
+        
+        try:
+            upper = int(parts[1].strip())
+        except:
+            return ProductionTimeCheckResult.UPPER_NOT_NUMBER, None
+        
+        if upper < 0:
+            return ProductionTimeCheckResult.UPPER_NEGATIVE, None
+        
+        production_time = NumericRange(lower, upper, bounds="[]")
+
+    else:
+        try:
+            upper = int(production_time_str)
+        except:
+            return ProductionTimeCheckResult.UPPER_NOT_NUMBER, None
+        
+        if upper < 0:
+            return ProductionTimeCheckResult.UPPER_NEGATIVE, None
+        
+        production_time = NumericRange(upper, upper, bounds="[]")
+        
+    return ProductionTimeCheckResult.SUCCESS, production_time
+
+def check_prod_limit(prod_limit_str: int, logger: Logger) -> Tuple[int, int]:
+    logger.debug("check_prod_limit CALL")
+    
+    try:
+        prod_limit = int(prod_limit_str)
+    except:
+        return ProdLimitCheckResult.NOT_NUMBER, None
+    
+    if prod_limit < 0:
+        return ProdLimitCheckResult.NEGATIVE, None
+    
+    return ProdLimitCheckResult.SUCCESS, prod_limit
