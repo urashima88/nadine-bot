@@ -119,11 +119,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.name.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_name,
@@ -136,14 +136,15 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         name = message.text.strip()
         if not name:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.empty_value.message
+                content_cfg.product.admin.create.empty_value.message,
+                parse_mode="Markdown"
             )
             return
         
@@ -157,7 +158,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.name.success.message
+            content_cfg.product.admin.create.name.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -178,11 +180,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.description.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_description,
@@ -195,14 +197,15 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         description = message.text.strip()
         if not description:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.empty_value.message
+                content_cfg.product.admin.create.empty_value.message,
+                parse_mode="Markdown"
             )
             return
         
@@ -216,7 +219,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.description.success.message
+            content_cfg.product.admin.create.description.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -236,11 +240,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.price.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_price,
@@ -253,24 +257,25 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         price = message.text.strip()
         if not price:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.empty_value.message
+                content_cfg.product.admin.create.empty_value.message,
+                parse_mode="Markdown"
             )
             return
         
         
         check_result, price = check_price(price, logger)
         if check_result == PriceCheckResult.NOT_NUMBER:
-            bot.send_message(message.chat.id, content_cfg.product.admin.create.price.not_number.message)
+            bot.send_message(message.chat.id, content_cfg.product.admin.create.price.not_number.message, parse_mode="Markdown")
             return
         elif check_result == PriceCheckResult.NEGATIVE:
-            bot.send_message(message.chat.id, content_cfg.product.admin.create.price.negative.message)
+            bot.send_message(message.chat.id, content_cfg.product.admin.create.price.negative.message, parse_mode="Markdown")
             return
         
         session["data"]["price"] = price
@@ -283,7 +288,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.price.success.message
+            content_cfg.product.admin.create.price.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -303,7 +309,7 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.category.text
@@ -323,7 +329,7 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         category = content_cfg.catalog.eng2ru_category_map[call.data.split('_')[2]]
@@ -338,7 +344,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             call.message.chat.id,
-            content_cfg.product.admin.create.category.success.message
+            content_cfg.product.admin.create.category.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -358,11 +365,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.production_time.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_production_time,
@@ -375,14 +382,15 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         production_time_str = message.text.strip()
         if not production_time_str:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.empty_value.message
+                content_cfg.product.admin.create.empty_value.message,
+                parse_mode="Markdown"
             )
             return
         
@@ -390,25 +398,29 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         if check_result == ProductionTimeCheckResult.LOWER_NOT_NUMBER:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.production_time.lower.not_number.message
+                content_cfg.product.admin.create.production_time.lower.not_number.message,
+                parse_mode="Markdown"
             )
             return
         elif check_result == ProductionTimeCheckResult.LOWER_NEGATIVE:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.production_time.lower.negative.message
+                content_cfg.product.admin.create.production_time.lower.negative.message,
+                parse_mode="Markdown"
             )
             return
         elif check_result == ProductionTimeCheckResult.UPPER_NOT_NUMBER:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.production_time.upper.not_number.message
+                content_cfg.product.admin.create.production_time.upper.not_number.message,
+                parse_mode="Markdown"
             )
             return
         elif check_result == ProductionTimeCheckResult.UPPER_NEGATIVE:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.production_time.upper.negative.message
+                content_cfg.product.admin.create.production_time.upper.negative.message,
+                parse_mode="Markdown"
             )
             return
         
@@ -424,7 +436,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.production_time.success.message
+            content_cfg.product.admin.create.production_time.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -444,11 +457,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.prod_limit.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_prod_limit,
@@ -461,23 +474,24 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prod_limit = message.text.strip()
         if not prod_limit:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.empty_value.message
+                content_cfg.product.admin.create.empty_value.message,
+                parse_mode="Markdown"
             )
             return
         
         check_result, prod_limit = check_prod_limit(prod_limit, logger)
         if check_result == ProdLimitCheckResult.NOT_NUMBER:
-            bot.send_message(message.chat.id, content_cfg.product.admin.create.prod_limit.not_number.message)
+            bot.send_message(message.chat.id, content_cfg.product.admin.create.prod_limit.not_number.message, parse_mode="Markdown")
             return
         elif check_result == ProdLimitCheckResult.NEGATIVE:
-            bot.send_message(message.chat.id, content_cfg.product.admin.create.prod_limit.negative.message)
+            bot.send_message(message.chat.id, content_cfg.product.admin.create.prod_limit.negative.message, parse_mode="Markdown")
             return
         
         session["data"]["prod_limit"] = prod_limit
@@ -490,7 +504,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.prod_limit.success.message
+            content_cfg.product.admin.create.prod_limit.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -510,11 +525,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.materials.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_materials,
@@ -527,14 +542,15 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         materials_str = message.text.strip()
         if not materials_str:
             bot.send_message(
                 message.chat.id,
-                content_cfg.product.admin.create.empty_value.message
+                content_cfg.product.admin.create.empty_value.message,
+                parse_mode="Markdown"
             )
             return
         
@@ -552,7 +568,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.materials.success.message
+            content_cfg.product.admin.create.materials.success.message,
+            parse_mode="Markdown"
         )
         
         bot.edit_message_text(
@@ -572,7 +589,7 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         article_number = session["data"]["article_number"]
@@ -587,11 +604,11 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         current_image_quantity = len(all_files)
         if current_image_quantity + 1 > 10:
-            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.images.add.exceed_limit.message)
+            bot.send_message(call.message.chat.id, content_cfg.product.admin.create.images.add.exceed_limit.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.product.admin.create.images.add.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             create_process_image,
@@ -606,14 +623,14 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         image_file_id = None
         if message.photo:
             image_file_id = message.photo[-1].file_id
         else:
-            bot.send_message(message.chat.id, content_cfg.product.admin.create.images.add.incorrect_file_format.message)
+            bot.send_message(message.chat.id, content_cfg.product.admin.create.images.add.incorrect_file_format.message, parse_mode="Markdown")
             return
         
         image_number = current_image_quantity + 1
@@ -625,7 +642,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             message.chat.id,
-            content_cfg.product.admin.create.images.add.success.message
+            content_cfg.product.admin.create.images.add.success.message,
+            parse_mode="Markdown"
         )
         
         image_filenames = os.listdir(image_dir)
@@ -657,7 +675,7 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         image_dir = Path(session["data"]["image_dir"])
@@ -673,7 +691,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
                 logger.error(f"Failed to delete directory {image_dir.name}: {e}")
                 bot.send_message(
                     call.message.chat.id,
-                    content_cfg.product.admin.create.clear.error.message
+                    content_cfg.product.admin.create.clear.error.message,
+                    parse_mode="Markdown"
                 )
                 return
         
@@ -681,7 +700,8 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         bot.send_message(
             call.message.chat.id,
-            content_cfg.product.admin.create.clear.success.message
+            content_cfg.product.admin.create.clear.success.message,
+            parse_mode="Markdown"
         )
         
         product_text = process_product_data(session)
@@ -704,7 +724,7 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
         
         session = get_create_product_session(user_id)
         if not session:
-            bot.send_message(call.message.message.chat.id, content_cfg.product.admin.create.session_not_found.message)
+            bot.send_message(call.message.message.chat.id, content_cfg.product.admin.create.session_not_found.message, parse_mode="Markdown")
             return
         
         success = db.create_product(
@@ -723,12 +743,14 @@ def register_product_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cf
             
             bot.send_message(
                 call.message.chat.id,
-                content_cfg.product.admin.create.complete.success.message
+                content_cfg.product.admin.create.complete.success.message,
+                parse_mode="Markdown"
             )
         else:
             bot.send_message(
                 call.message.chat.id,
-                content_cfg.product.admin.create.complete.error.message
+                content_cfg.product.admin.create.complete.error.message,
+                parse_mode="Markdown"
             )
             
             

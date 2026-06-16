@@ -51,6 +51,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         bot.send_message(
             message.chat.id, 
             welcome_text, 
+            parse_mode="Markdown",
             reply_markup=keyboard
         )
         
@@ -76,6 +77,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         bot.send_message(
             message.chat.id, 
             content_cfg.common.main_menu.user.message, 
+            parse_mode="Markdown",
             reply_markup=main_menu_keyboard(content_cfg)
         )
         
@@ -94,6 +96,10 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         if order_show_session:
             order_show_delete_session(user_id)
             
+        catalog_session = get_catalog_session(user_id)
+        if catalog_session:
+            delete_catalog_session(user_id)
+            
         admin_user_data_show_session = admin_user_data_show_get_session(user_id)
         if admin_user_data_show_session:
             admin_user_data_show_delete_session(user_id)
@@ -101,6 +107,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         bot.send_message(
             message.chat.id, 
             content_cfg.common.main_menu.admin.message, 
+            parse_mode="Markdown",
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )
         
@@ -194,7 +201,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
             prompt = content_cfg.common.profile.edit.delivery_company.text
         else:
             prompt = content_cfg.common.profile.edit.delivery_point_address.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             save_user_profile_field,
@@ -215,14 +222,14 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         )
             
         if success:
-            bot.send_message(message.chat.id, result_message)
+            bot.send_message(message.chat.id, result_message, parse_mode="Markdown")
             delete_message(bot, message.chat.id, message.message_id, logger)
             if db.is_admin(tg_user_id):
                 admin_show_profile(message.chat.id, tg_user_id)
             else:
                 show_profile(message.chat.id, tg_user_id)
         else:
-            bot.send_message(message.chat.id, result_message)
+            bot.send_message(message.chat.id, result_message, parse_mode="Markdown")
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.common.admin.user_data.all.message)
     @err_handler
@@ -233,7 +240,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         users = db.get_all_users()
         
         if not users:
-            bot.send_message(message.chat.id, content_cfg.common.admin.user_data.all.is_empty.message)
+            bot.send_message(message.chat.id, content_cfg.common.admin.user_data.all.is_empty.message, parse_mode="Markdown")
             return
         
         admin_user_data_show_set_session(admin_id, users)
@@ -252,10 +259,11 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
     def admin_send_all_users_displayed_message(chat_id: int, user_id: int):
         logger.debug("admin_send_all_users_displayed_message CALL")
         
-        bot.send_message(chat_id, content_cfg.common.admin.user_data.all.displayed.message)
+        bot.send_message(chat_id, content_cfg.common.admin.user_data.all.displayed.message, parse_mode="Markdown")
         bot.send_message(
             chat_id, 
             content_cfg.common.admin.user_data.main_menu.message, 
+            parse_mode="Markdown",
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )
         admin_user_data_show_delete_session(user_id)
@@ -265,7 +273,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         
         session = admin_user_data_show_get_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.common.admin.user_data.all.control_show.session_not_found.message)
+            bot.send_message(chat_id, content_cfg.common.admin.user_data.all.control_show.session_not_found.message, parse_mode="Markdown")
             return
         
         users = session["users"]
@@ -308,7 +316,7 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         admin_id = message.from_user.id
         session = admin_user_data_show_get_session(admin_id)
         if not session:
-            bot.send_message(message.chat.id, content_cfg.common.admin.user_data.all.control_show.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.common.admin.user_data.all.control_show.session_not_found.message, parse_mode="Markdown")
             return
         
         admin_send_next_users(message.chat.id, admin_id, count)
@@ -337,5 +345,6 @@ def register_common_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg
         bot.send_message(
             message.chat.id,
             content_cfg.common.admin.user_data.main_menu.message,
+            parse_mode="Markdown",
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )

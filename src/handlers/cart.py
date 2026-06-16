@@ -41,7 +41,11 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         )
         
         if not cart_text:
-            bot.send_message(message.chat.id, content_cfg.cart.is_empty.message)
+            bot.send_message(
+                message.chat.id, 
+                content_cfg.cart.is_empty.message,
+                parse_mode="Markdown"
+            )
             return
         
         sent = bot.send_message(
@@ -81,7 +85,11 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
+            bot.send_message(
+                chat_id, 
+                content_cfg.cart.session_not_found.message,
+                parse_mode="Markdown"
+            )
             return 
         
         for message_id in session["article_number_to_message_id_map"].values():
@@ -95,7 +103,11 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
+            bot.send_message(
+                chat_id, 
+                content_cfg.cart.session_not_found.message,
+                parse_mode="Markdown"
+            )
             return 
         
         delete_message(bot, chat_id, session["cart_text_message_id"], logger)
@@ -112,7 +124,11 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         if success:
             session = get_cart_session(tg_user_id)
             if not session:
-                bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+                bot.send_message(
+                    call.message.chat.id, 
+                    content_cfg.cart.session_not_found.message,
+                    parse_mode="Markdown"
+                )
                 return
             bot.answer_callback_query(call.id, content_cfg.cart.completely_cleared.message, show_alert=False)
             delete_all_messages(call.message.chat.id, tg_user_id)
@@ -128,14 +144,22 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = call.from_user.id
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(
+                call.message.chat.id, 
+                content_cfg.cart.session_not_found.message,
+                parse_mode="Markdown"
+            )
             return 
         
         bot.answer_callback_query(call.id)
         
         cart_products = db.get_cart_products(user_id)
         if not cart_products:
-            bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
+            bot.send_message(
+                call.message.chat.id, 
+                content_cfg.cart.is_empty.message,
+                parse_mode="Markdown"
+            )
             return
         
         article_numbers = []
@@ -146,18 +170,27 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             article_number_to_product_map[article_number] = product
         success = edit_cart_session(user_id, article_numbers, article_number_to_product_map)
         if not success:
-            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(
+                call.message.chat.id, 
+                content_cfg.cart.session_not_found.message,
+                parse_mode="Markdown"
+            )
             return
         
         sent = bot.send_message(
             call.message.chat.id,
             content_cfg.cart.edit.text,
+            parse_mode="Markdown",
             reply_markup=cart_control_edit_mode_keyboard(content_cfg)
         )
         
         success = add_control_edit_message_id(user_id, sent.message_id)
         if not success:
-            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(
+                call.message.chat.id, 
+                content_cfg.cart.session_not_found.message,
+                parse_mode="Markdown"
+            )
             return
         
         send_next_product(call.message, user_id)
@@ -169,13 +202,13 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
+            bot.send_message(chat_id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         article_numbers = session["article_numbers"]
         index = session["index"]
         if index >= len(article_numbers):
-            bot.send_message(chat_id, content_cfg.cart.control_edit.no_other_products.message)
+            bot.send_message(chat_id, content_cfg.cart.control_edit.no_other_products.message, parse_mode="Markdown")
             return
         
         article_number = article_numbers[index]
@@ -194,7 +227,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             )
             session["article_number_to_message_id_map"][article_number] = sent.message_id
         else:
-            bot.send_message(chat_id, content_cfg.cart.edit.product.not_found.message)
+            bot.send_message(chat_id, content_cfg.cart.edit.product.not_found.message, parse_mode="Markdown")
         
         session["index"] += 1
         if session["index"] >= session["total"]:
@@ -205,7 +238,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.cart.session_not_found.message)
+            bot.send_message(chat_id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return 
         product = session["article_number_to_product_map"].get(article_number)
         if product:
@@ -226,9 +259,9 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
                     return
                 except Exception as e:
                     logger.warning(f"Failed to edit the cart message: {e}")
-                    bot.send_message(chat_id, content_cfg.cart.edit.product.error.message)
+                    bot.send_message(chat_id, content_cfg.cart.edit.product.error.message, parse_mode="Markdown")
         else:
-            bot.send_message(chat_id, content_cfg.cart.edit.product.not_found.message)
+            bot.send_message(chat_id, content_cfg.cart.edit.product.not_found.message, parse_mode="Markdown")
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('increase_product_'))
     @err_handler
@@ -239,7 +272,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = call.from_user.id
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         product = session["article_number_to_product_map"].get(article_number)
@@ -252,7 +285,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             product["quantity"] = new_quantity
             edit_product(call.message.chat.id, user_id, article_number)
         else:
-            bot.send_message(call.message.chat.id, content_cfg.cart.edit.product.not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.cart.edit.product.not_found.message, parse_mode="Markdown")
         
     def clear_product_info(chat_id: int, session, user_id: int, article_number: int):
         logger.debug("clear_product_info CALL")
@@ -284,7 +317,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = call.from_user.id
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         product = session["article_number_to_product_map"].get(article_number)
@@ -297,12 +330,12 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
             else:
                 clear_product_info(call.message.chat.id, session, user_id, article_number)
                 if not session["article_number_to_product_map"]:
-                    bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
+                    bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message, parse_mode="Markdown")
                     return
                 
             bot.answer_callback_query(call.id)
         else:
-            bot.send_message(call.message.chat.id, content_cfg.cart.edit.product.not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.cart.edit.product.not_found.message, parse_mode="Markdown")
         
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_product_'))
     @err_handler
@@ -313,12 +346,12 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = call.from_user.id
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         if session["total"] > 0:
             clear_product_info(call.message.chat.id, session, user_id, article_number) 
             if not session["article_number_to_product_map"]:
-                bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
+                bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message, parse_mode="Markdown")
                 return
         bot.answer_callback_query(call.id)
         
@@ -332,10 +365,10 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
     def send_no_other_products_message(message, user_id: int):
         logger.debug("send_no_other_products_message CALL")
         
-        sent = bot.send_message(message.chat.id, content_cfg.cart.control_edit.no_other_products.message)
+        sent = bot.send_message(message.chat.id, content_cfg.cart.control_edit.no_other_products.message, parse_mode="Markdown")
         success = add_control_edit_message_id(user_id, sent.message_id)
         if not success:
-            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
         
     def send_products(message, count):
         logger.debug("send_products CALL")
@@ -343,7 +376,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = message.from_user.id
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         total = session["total"]
@@ -365,7 +398,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = message.from_user.id
         success = add_control_edit_message_id(user_id, message.id)
         if not success:
-            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         send_products(message, 1)
@@ -378,7 +411,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = message.from_user.id
         success = add_control_edit_message_id(user_id, message.id)
         if not success:
-            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         send_products(message, 5)
@@ -391,12 +424,12 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         user_id = message.from_user.id
         session = get_cart_session(user_id)
         if not session:
-            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         success = add_control_edit_message_id(user_id, message.id)
         if not success:
-            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
             return
         
         delete_all_messages(message.chat.id, user_id)
@@ -405,6 +438,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         bot.send_message(
             message.chat.id, 
             content_cfg.cart.main_menu.message,
+            parse_mode="Markdown",
             reply_markup=main_menu_keyboard(content_cfg)
         )
         
@@ -418,7 +452,7 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         if session:
             success = add_control_edit_message_id(user_id, message.id)
             if not success:
-                bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message)
+                bot.send_message(message.chat.id, content_cfg.cart.session_not_found.message, parse_mode="Markdown")
                 return
             
             delete_all_messages(message.chat.id, user_id)
@@ -426,5 +460,6 @@ def register_cart_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg: 
         bot.send_message(
             message.chat.id, 
             content_cfg.cart.main_menu.message,
+            parse_mode="Markdown",
             reply_markup=main_menu_keyboard(content_cfg)
         )

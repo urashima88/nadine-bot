@@ -231,7 +231,7 @@ def prepare_product_info(
     
     if not product:
         bot.send_message(chat_id, content_cfg.product.not_found.message)
-        return
+        return "", []
     
     text, image_messages = process_product(
         product,

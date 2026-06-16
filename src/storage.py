@@ -497,6 +497,15 @@ class Storage:
                 """, (order_id,))
                 row = cur.fetchone()
                 return row is not None
+            
+    def get_order_status(self, order_id: str) -> Optional[str]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT status FROM orders WHERE id = %s::uuid
+                """, (order_id,))
+                row = cur.fetchone()
+                return row['status'] if row else None
     
     def get_order_products(self, order_id: str) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
@@ -937,3 +946,144 @@ class Storage:
                     conn.rollback()
                     self.logger.error(f"Error creating product: {e}")
                     return False
+                
+    def get_monthly_completed_orders(self) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        DATE_TRUNC('month', created_at) AS month,
+                        COUNT(*) AS orders_count
+                    FROM orders
+                    WHERE status = %s
+                    GROUP BY DATE_TRUNC('month', created_at)
+                    ORDER BY month DESC
+                """, ('выполнен и отправлен',))
+                return cur.fetchall()
+            
+    def get_monthly_revenue(self) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        DATE_TRUNC('month', created_at) AS month,
+                        SUM(order_price) AS total_revenue
+                    FROM orders
+                    WHERE status = %s
+                    GROUP BY month
+                    ORDER BY month DESC
+                """, ('выполнен и отправлен',))
+                return cur.fetchall()
+            
+    def get_monthly_new_users(self) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        DATE_TRUNC('month', created_at) AS month,
+                        COUNT(*) AS new_users_count
+                    FROM users
+                    GROUP BY month
+                    ORDER BY month DESC
+                """)
+                return cur.fetchall()
+            
+    def get_monthly_active_users(self) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        DATE_TRUNC('month', created_at) AS month,
+                        COUNT(DISTINCT user_id) AS active_users_count
+                    FROM orders
+                    WHERE status = %s
+                    GROUP BY month
+                    ORDER BY month DESC
+                """, ('выполнен и отправлен',))
+                return cur.fetchall()
+            
+    def get_top_selling_products(self, limit: int = 3) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        p.article_number,
+                        p.name,
+                        SUM(op.quantity) AS total_quantity
+                    FROM orders o
+                    JOIN order_products op ON o.id = op.order_id
+                    JOIN products p ON op.product_id = p.id
+                    WHERE o.status = %s
+                    GROUP BY p.article_number, p.name
+                    ORDER BY total_quantity DESC
+                    LIMIT %s
+                """, ('выполнен и отправлен', limit))
+                return cur.fetchall()
+            
+    def get_monthly_completed_orders_for_year(self, year: int) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        EXTRACT(MONTH FROM created_at) AS month,
+                        COUNT(*) AS orders_count
+                    FROM orders
+                    WHERE status = %s
+                    AND EXTRACT(YEAR FROM created_at) = %s
+                    GROUP BY month
+                    ORDER BY month
+                """, ('выполнен и отправлен', year))
+                rows = cur.fetchall()
+                month_counts = {int(row['month']): row['orders_count'] for row in rows}
+                result = []
+                for m in range(1, 13):
+                    result.append({
+                        'month': m,
+                        'orders_count': month_counts.get(m, 0)
+                    })
+                return result
+            
+    def get_monthly_revenue_for_year(self, year: int) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        EXTRACT(MONTH FROM created_at) AS month,
+                        COALESCE(SUM(order_price), 0) AS total_revenue
+                    FROM orders
+                    WHERE status = %s
+                    AND EXTRACT(YEAR FROM created_at) = %s
+                    GROUP BY month
+                    ORDER BY month
+                """, ('выполнен и отправлен', year))
+                rows = cur.fetchall()
+                month_revenue = {int(row['month']): float(row['total_revenue']) for row in rows}
+                result = []
+                for m in range(1, 13):
+                    result.append({
+                        'month': m,
+                        'total_revenue': month_revenue.get(m, 0.0)
+                    })
+                return result
+            
+    def get_monthly_new_users_for_year(self, year: int) -> List[Dict]:
+        with self._get_connection() as conn:
+            with self._get_cursor(conn) as cur:
+                cur.execute("""
+                    SELECT 
+                        EXTRACT(MONTH FROM created_at) AS month,
+                        COUNT(*) AS new_users_count
+                    FROM users
+                    WHERE EXTRACT(YEAR FROM created_at) = %s
+                    GROUP BY month
+                    ORDER BY month
+                """, (year,))
+                rows = cur.fetchall()
+                month_counts = {int(row['month']): row['new_users_count'] for row in rows}
+                result = []
+                for m in range(1, 13):
+                    result.append({
+                        'month': m,
+                        'new_users_count': month_counts.get(m, 0)
+                    })
+                return result

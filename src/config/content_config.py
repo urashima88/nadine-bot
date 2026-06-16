@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from psycopg2.extras import NumericRange
 from easydict import EasyDict as edict
@@ -499,7 +499,22 @@ class ContentConfig:
             "user": {
                 "message": "Главное меню:"
             }
-        }
+        },
+        "eng2ru_month_map": {
+            'January': 'Январь',
+            'February': 'Февраль',
+            'March': 'Март',
+            'April': 'Апрель',
+            'May': 'Май',
+            'June': 'Июнь',
+            'July': 'Июль',
+            'August': 'Август',
+            'September': 'Сентябрь',
+            'October': 'Октябрь',
+            'November': 'Ноябрь',
+            'December': 'Декабрь'
+        }, 
+        "months": ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек']
     })
     
     product: edict = edict({
@@ -980,9 +995,73 @@ class ContentConfig:
         }
     })
     
-    stats: edict = edict({
+    statistics: edict = edict({
         "admin": {
-            "message": "📊 Статистика"
+            "message": "📊 Статистика",
+            "month": {
+                "no_data": {
+                    "message": "📊 Нет данных за текущий месяц."
+                }
+            },
+            "text": (
+                "📊 *Статистика за {month_name} {year}*\n\n"
+                "📦 *Выполненных заказов:* {order_count}\n"
+                "💰 *Выручка:* {total_revenue} ₽\n"
+                "👤 *Новых пользователей:* {new_users_count}\n"
+                "🔥 *Активных пользователей:* {active_users_count}\n\n"
+                "🏆 *Топ-3 товаров:*\n"
+                "{top_products_text}"
+            ),
+            "top_product": {
+                "text": "{place}. {name} (Nd\\_{article_number:05d}) — {total_quantity} шт.\n"
+            },
+            "histogram": {
+                "completed_orders": {
+                    "year": {
+                        "message": "График 'Число выполненных заказов за текущий год'",
+                        "no_data": {
+                            "message": "📊 Нет выполненных заказов за текущий год."
+                        },
+                        "header": {
+                            "text": "Количество выполненных заказов по месяцам ({year})"
+                        }
+                    },
+                    "count": {
+                        "text": "Количество заказов"
+                    }
+                },
+                "revenue": {
+                    "year": {
+                        "message": "График 'Выручка за текущий год'",
+                        "no_data": {
+                            "message": "📊 Нет выручки за текущий год."
+                        },
+                        "header": {
+                            "text": "Выручка по месяцам ({year})"
+                        }
+                    },
+                    "total": {
+                        "text": "Выручка (₽)"
+                    }
+                },
+                "new_users": {
+                    "year": {
+                        "message": "График 'Число новых пользователей за текущий год'",
+                        "no_data": {
+                            "message": "📊 Нет новых пользователей за текущий год."
+                        },
+                        "header": {
+                            "text": "Число новых пользователей по месяцам ({year})"
+                        }
+                    },
+                    "count": {
+                        "text": "Количество пользователей"
+                    }
+                },
+                "month": {
+                    "text": "Месяц"
+                }
+            }
         }
     })
     
@@ -1465,4 +1544,53 @@ class ContentConfig:
             delivery_point_address=delivery_point_address,
             delivery_info_text=delivery_info_text
         )
-        
+    
+    # statistics
+    
+    @classmethod
+    def get_statistics_admin_top_product_text(
+        cls,
+        place: int,
+        name: str,
+        article_number: int,
+        total_quantity: int
+    ):
+        return cls.statistics.admin.top_product.text.format(
+            place=place,
+            name=name.capitalize(),
+            article_number=article_number,
+            total_quantity=total_quantity
+        )
+            
+    @classmethod
+    def get_statistics_admin_text(
+        cls,
+        month_name: str,
+        year: str,
+        order_count: int,
+        total_revenue: float,
+        new_users_count: int,
+        active_users_count: int,
+        top_products_text: str
+    ):
+        return cls.statistics.admin.text.format(
+            month_name=month_name,
+            year=year,
+            order_count=order_count,
+            total_revenue=round(float(total_revenue), 2),
+            new_users_count=new_users_count,
+            active_users_count=active_users_count,
+            top_products_text=top_products_text
+        )
+          
+    @classmethod  
+    def get_statistics_admin_histogram_completed_orders_year_header_text(cls, year: str):
+        return cls.statistics.admin.histogram.completed_orders.year.header.text.format(year=year)
+    
+    @classmethod
+    def get_statistics_admin_histogram_revenue_year_header_text(cls, year: str):
+        return cls.statistics.admin.histogram.revenue.year.header.text.format(year=year)
+    
+    @classmethod
+    def get_statistics_admin_histogram_new_users_year_header_text(cls, year: str):
+        return cls.statistics.admin.histogram.new_users.year.header.text.format(year=year)

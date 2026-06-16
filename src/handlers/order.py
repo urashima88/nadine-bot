@@ -65,6 +65,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             bot.send_message(
                 call.message.chat.id,
                 content_cfg.order.exceed_limit.message,
+                parse_mode="Markdown",
             )
             return
         else:
@@ -72,7 +73,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             remaining = content_cfg.order.limit_per_day - today_orders_count
             bot.send_message(
                 call.message.chat.id,
-                content_cfg.get_order_start_message(remaining)
+                content_cfg.get_order_start_message(remaining),
+                parse_mode="Markdown"
             )
         
         start_order_chain(call)       
@@ -114,18 +116,18 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         )
             
         if success:
-            bot.send_message(message.chat.id, result_message)
+            bot.send_message(message.chat.id, result_message, parse_mode="Markdown")
             delete_message(bot, message.chat.id, message.message_id, logger)
             if index < 5:
                 session = get_order_session(call.from_user.id)
                 if not session:
-                    bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message)
+                    bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message, parse_mode="Markdown")
                     return
                 session["index"] += 1
                 check_order_chain(call)
         else:
             delete_order_session(call.from_user.id)
-            bot.send_message(message.chat.id, result_message)
+            bot.send_message(message.chat.id, result_message, parse_mode="Markdown")
        
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_field_'))
     @err_handler
@@ -134,7 +136,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         session = get_order_session(call.from_user.id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message, parse_mode="Markdown")
             return
         
         index = session["index"]
@@ -142,7 +144,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         choice = call.data.split("_")[2]
         if choice == "yes":
             _, prompt = get_field_name_and_prompt(index)
-            message = bot.send_message(call.message.chat.id, prompt)
+            message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
             bot.register_next_step_handler(
                 message,
                 update_user_profile_field,
@@ -168,7 +170,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         user_id = call.from_user.id
         session = get_order_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message, parse_mode="Markdown")
             return
         
         field_values = session["field_values"]
@@ -177,7 +179,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             field_value = field_values[index]
             if not field_value:
                 _, prompt = get_field_name_and_prompt(index)
-                message = bot.send_message(call.message.chat.id, prompt)
+                message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
                 bot.register_next_step_handler(
                     message,
                     update_user_profile_field,
@@ -204,7 +206,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         user_id = call.from_user.id
         session = get_order_session(user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message, parse_mode="Markdown")
             return
         
         chat_id = session["chat_id"]
@@ -215,7 +217,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         if not cart_text:
             delete_order_session(user_id)
-            bot.send_message(chat_id, content_cfg.cart.is_empty.message)
+            bot.send_message(chat_id, content_cfg.cart.is_empty.message, parse_mode="Markdown")
             return
         
         bot.send_message(
@@ -235,7 +237,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         session = get_order_session(tg_user_id)
         if not session:
-            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message)
+            bot.send_message(call.message.chat.id, content_cfg.order.session_not_found.message, parse_mode="Markdown")
             return
         
         full_name, phone, timezone, delivery_company, delivery_point_address = db.get_user_profile_data(tg_user_id)
@@ -252,21 +254,21 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             empty_fields.append("delivery_point_address")
         if empty_fields:
             delete_order_session(tg_user_id)
-            bot.send_message(call.message.chat.id, content_cfg.get_order_place_empty_fields_message(empty_fields))
+            bot.send_message(call.message.chat.id, content_cfg.get_order_place_empty_fields_message(empty_fields), parse_mode="Markdown")
             return
         
         tg_username, tg_full_name = db.get_user_tg_data(tg_user_id)
         
         cart_products = db.get_cart_products(tg_user_id)
         if not cart_products:
-            bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message)
+            bot.send_message(call.message.chat.id, content_cfg.cart.is_empty.message, parse_mode="Markdown")
             return
         
         total_price = sum(product["price"] * product["quantity"] for product in cart_products)
         order_id = db.create_order(tg_user_id, total_price, delivery_company, delivery_point_address)
         if not order_id:
             delete_order_session(tg_user_id)
-            bot.send_message(call.message.chat.id, content_cfg.order.place.error.message)
+            bot.send_message(call.message.chat.id, content_cfg.order.place.error.message, parse_mode="Markdown")
             return
         
         order_number = db.get_order_number_by_order_id(order_id)
@@ -314,7 +316,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         order_id = (call.data.split("_")[3])
         
         prompt = content_cfg.order.admin.new.set_delivery_price.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             add_delivery_price,
@@ -324,30 +326,31 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
     def add_delivery_price(message, order_id: str):
         new_value = message.text.strip().replace(',', '.')
         if not new_value:
-            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.empty_value.message)
+            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.empty_value.message, parse_mode="Markdown")
             return
         
         try:
             new_value = float(new_value)
         except:
-            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.not_number.message)
+            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.not_number.message, parse_mode="Markdown")
             return
         
         if new_value < 0:
             bot.send_message(
                 message.chat.id,
-                content_cfg.order.admin.new.set_delivery_price.negative.message
+                content_cfg.order.admin.new.set_delivery_price.negative.message,
+                parse_mode="Markdown"
             )
             return
         
         success = db.set_delivery_price(order_id, new_value)
         success_message = content_cfg.order.admin.new.set_delivery_price.success.message   
         if success:
-            bot.send_message(message.chat.id, success_message)
+            bot.send_message(message.chat.id, success_message, parse_mode="Markdown")
             delete_message(bot, message.chat.id, message.message_id, logger)
             show_order(message.chat.id, order_id)
         else:
-            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.error.message)
+            bot.send_message(message.chat.id, content_cfg.order.admin.new.set_delivery_price.error.message, parse_mode="Markdown")
     
     def show_order(chat_id: int, order_id: str):
         logger.debug("show_order CALL")
@@ -413,16 +416,18 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             if session["order_id"] != order_id:
                 bot.send_message(
                     call.message.chat.id,
-                    content_cfg.order.admin.new.cancel.not_completed_yet.other.message
+                    content_cfg.order.admin.new.cancel.not_completed_yet.other.message,
+                    parse_mode="Markdown"
                 )
             else:
                 bot.send_message(
                     call.message.chat.id,
-                    content_cfg.order.admin.new.cancel.not_completed_yet.current.message
+                    content_cfg.order.admin.new.cancel.not_completed_yet.current.message,
+                    parse_mode="Markdown"
                 )
         else:
             prompt = content_cfg.order.admin.new.cancel.reason.text
-            message = bot.send_message(call.message.chat.id, prompt)
+            message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
             admin_cancel_order_set_session(call.from_user.id, order_id)
             bot.register_next_step_handler(
                 message,
@@ -446,7 +451,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         if success:
             bot.send_message(
                 message.chat.id, 
-                content_cfg.get_order_admin_new_cancel_success_message(order_number)
+                content_cfg.get_order_admin_new_cancel_success_message(order_number),
+                parse_mode="Markdown"
             )
             if tg_user_id:
                 header_text = content_cfg.order.place.final.header_text
@@ -466,12 +472,14 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             else:
                 bot.send_message(
                     message.chat.id, 
-                    content_cfg.order.admin.new.user_not_found.message
+                    content_cfg.order.admin.new.user_not_found.message,
+                    parse_mode="Markdown"
                 )
         else:
             bot.send_message(
                 message.chat.id, 
-                content_cfg.get_order_admin_new_cancel_error_message(order_number)
+                content_cfg.get_order_admin_new_cancel_error_message(order_number),
+                parse_mode="Markdown"
             )
         
         admin_cancel_order_delete_session(call.from_user.id)
@@ -485,7 +493,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         order_id = (call.data.split("_")[3])
         
         prompt = content_cfg.order.admin.new.send.for_payment.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_invoice,
@@ -505,12 +513,12 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             invoice_file = message.photo[-1].file_id
             file_type = "photo"
         else:
-            bot.send_message(admin_chat_id, content_cfg.order.admin.new.send.incorrect_file_format.message)
+            bot.send_message(admin_chat_id, content_cfg.order.admin.new.send.incorrect_file_format.message, parse_mode="Markdown")
             return
         
         tg_user_id, timezone = db.get_tg_user_id_and_timezone(order_id)
         if not tg_user_id:
-            bot.send_message(admin_chat_id, content_cfg.order.admin.new.user_not_found.message)
+            bot.send_message(admin_chat_id, content_cfg.order.admin.new.user_not_found.message, parse_mode="Markdown")
             return
         
         order_data = db.get_order_number_delivery_price_created_at(order_id)
@@ -526,7 +534,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         status = content_cfg.order.status.for_payment.text
         success = db.update_order_status(order_id, status)
         if not success:
-            bot.send_message(admin_chat_id, content_cfg.order.status.update_error.message)
+            bot.send_message(admin_chat_id, content_cfg.order.status.update_error.message, parse_mode="Markdown")
             return
         
         total_with_delivery = total + delivery_price
@@ -556,7 +564,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 parse_mode="Markdown",
                 reply_markup=order_user_cancel_keyboard(content_cfg, order_id)
             )
-        bot.send_message(admin_chat_id, content_cfg.get_order_admin_new_send_for_payment_success_message(order_number))
+        bot.send_message(admin_chat_id, content_cfg.get_order_admin_new_send_for_payment_success_message(order_number), parse_mode="Markdown")
         bot.delete_message(admin_chat_id, message.message_id)
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith("send_receipt_"))
@@ -567,7 +575,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         order_id = (call.data.split("_")[2])
         
         prompt = content_cfg.order.admin.new.send.receipt.file.text
-        message = bot.send_message(call.message.chat.id, prompt)
+        message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_receipt,
@@ -587,11 +595,11 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             receipt_file = message.photo[-1].file_id
             file_type = "photo"
         else:
-            bot.send_message(admin_chat_id, content_cfg.order.admin.new.send.incorrect_file_format.message)
+            bot.send_message(admin_chat_id, content_cfg.order.admin.new.send.incorrect_file_format.message, parse_mode="Markdown")
             return
         
         prompt = content_cfg.order.admin.new.send.receipt.delivery_info.text
-        message = bot.send_message(message.chat.id, prompt)
+        message = bot.send_message(message.chat.id, prompt, parse_mode="Markdown")
         bot.register_next_step_handler(
             message,
             process_delivery_data,
@@ -609,7 +617,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         if not delivery_info:
             bot.send_message(
                 admin_chat_id, 
-                content_cfg.order.admin.new.send.receipt.delivery_info.is_empty.message
+                content_cfg.order.admin.new.send.receipt.delivery_info.is_empty.message,
+                parse_mode="Markdown"
             )
             return
         
@@ -617,13 +626,14 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         if not success:
             bot.send_message(
                 admin_chat_id, 
-                content_cfg.order.admin.new.send.receipt.delivery_info.failed_to_set.message
+                content_cfg.order.admin.new.send.receipt.delivery_info.failed_to_set.message,
+                parse_mode="Markdown"
             )
             return
         
         tg_user_id, timezone = db.get_tg_user_id_and_timezone(order_id)
         if not tg_user_id:
-            bot.send_message(admin_chat_id, content_cfg.order.admin.new.user_not_found.message)
+            bot.send_message(admin_chat_id, content_cfg.order.admin.new.user_not_found.message, parse_mode="Markdown")
             return
         
         order_data = db.get_order_number_delivery_price_created_at(order_id)
@@ -637,7 +647,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         status = content_cfg.order.status.completed.text
         success = db.update_order_status(order_id, status)
         if not success:
-            bot.send_message(admin_chat_id, content_cfg.order.status.update_error.message)
+            bot.send_message(admin_chat_id, content_cfg.order.status.update_error.message, parse_mode="Markdown")
             return
         
         total_with_delivery = total + delivery_price
@@ -666,7 +676,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
                 caption=receipt_text,
                 parse_mode="Markdown"
             )
-        bot.send_message(admin_chat_id, content_cfg.get_order_admin_new_send_receipt_success_message(order_number))
+        bot.send_message(admin_chat_id, content_cfg.get_order_admin_new_send_receipt_success_message(order_number), parse_mode="Markdown")
         bot.delete_message(admin_chat_id, message.message_id)
         
     @bot.message_handler(func=lambda message: message.text == content_cfg.order.user.message)
@@ -678,7 +688,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         orders = db.get_user_orders(tg_user_id)
         
         if not orders:
-            bot.send_message(message.chat.id, content_cfg.order.user.all.is_empty.message)
+            bot.send_message(message.chat.id, content_cfg.order.user.all.is_empty.message, parse_mode="Markdown")
             return
         
         order_show_set_session(tg_user_id, orders)
@@ -697,10 +707,11 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
     def user_send_all_orders_displayed_message(chat_id: int, user_id: int):
         logger.debug("send_all_orders_displayed CALL")
         
-        bot.send_message(chat_id, content_cfg.order.user.all.displayed.message)
+        bot.send_message(chat_id, content_cfg.order.user.all.displayed.message, parse_mode="Markdown")
         bot.send_message(
             chat_id, 
             content_cfg.order.user.main_menu.message, 
+            parse_mode="Markdown",
             reply_markup=main_menu_keyboard(content_cfg)
         )
         order_show_delete_session(user_id)
@@ -710,7 +721,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         session = order_show_get_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.order.user.all.control_show.session_not_found.message)
+            bot.send_message(chat_id, content_cfg.order.user.all.control_show.session_not_found.message, parse_mode="Markdown")
             return
         
         orders = session["orders"]
@@ -772,7 +783,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         user_id = message.from_user.id
         session = order_show_get_session(user_id)
         if not session:
-            bot.send_message(message.chat.id, content_cfg.order.user.all.control_show.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.order.user.all.control_show.session_not_found.message, parse_mode="Markdown")
             return
         
         user_send_next_orders(message.chat.id, user_id, count)
@@ -801,6 +812,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         bot.send_message(
             message.chat.id,
             content_cfg.order.user.main_menu.message,
+            parse_mode="Markdown",
             reply_markup=main_menu_keyboard(content_cfg)
         )
         
@@ -981,7 +993,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         orders = db.get_all_orders()
         
         if not orders:
-            bot.send_message(message.chat.id, content_cfg.order.admin.all.is_empty.message)
+            bot.send_message(message.chat.id, content_cfg.order.admin.all.is_empty.message, parse_mode="Markdown")
             return
         
         order_show_set_session(tg_user_id, orders)
@@ -1002,7 +1014,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         
         session = order_show_get_session(user_id)
         if not session:
-            bot.send_message(chat_id, content_cfg.order.admin.all.control_show.session_not_found.message)
+            bot.send_message(chat_id, content_cfg.order.admin.all.control_show.session_not_found.message, parse_mode="Markdown")
             return
         
         orders = session["orders"]
@@ -1072,10 +1084,11 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
     def admin_send_all_orders_displayed_message(chat_id: int, user_id: int):
         logger.debug("admin_send_all_orders_displayed CALL")
         
-        bot.send_message(chat_id, content_cfg.order.admin.all.displayed.message)
+        bot.send_message(chat_id, content_cfg.order.admin.all.displayed.message, parse_mode="Markdown")
         bot.send_message(
             chat_id, 
             content_cfg.order.admin.main_menu.message, 
+            parse_mode="Markdown",
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )
         order_show_delete_session(user_id)
@@ -1086,7 +1099,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         user_id = message.from_user.id
         session = order_show_get_session(user_id)
         if not session:
-            bot.send_message(message.chat.id, content_cfg.order.admin.all.control_show.session_not_found.message)
+            bot.send_message(message.chat.id, content_cfg.order.admin.all.control_show.session_not_found.message, parse_mode="Markdown")
             return
         
         admin_send_next_orders(message.chat.id, user_id, count)
@@ -1115,6 +1128,7 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         bot.send_message(
             message.chat.id,
             content_cfg.order.admin.main_menu.message,
+            parse_mode="Markdown",
             reply_markup=admin_main_menu_keyboard(content_cfg)
         )
         
@@ -1132,16 +1146,18 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             if session["order_id"] != order_id:
                 bot.send_message(
                     call.message.chat.id,
-                    content_cfg.order.admin.new.cancel.not_completed_yet.other.message
+                    content_cfg.order.admin.new.cancel.not_completed_yet.other.message,
+                    parse_mode="Markdown"
                 )
             else:
                 bot.send_message(
                     call.message.chat.id,
-                    content_cfg.order.admin.new.cancel.not_completed_yet.current.message
+                    content_cfg.order.admin.new.cancel.not_completed_yet.current.message,
+                    parse_mode="Markdown"
                 )
         else:
             prompt = content_cfg.order.admin.new.cancel.reason.text
-            message = bot.send_message(call.message.chat.id, prompt)
+            message = bot.send_message(call.message.chat.id, prompt, parse_mode="Markdown")
             admin_cancel_order_set_session(call.from_user.id, order_id)
             bot.register_next_step_handler(
                 message,
@@ -1163,7 +1179,8 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
         if success:
             bot.send_message(
                 message.chat.id, 
-                content_cfg.get_order_admin_new_cancel_success_message(order_number)
+                content_cfg.get_order_admin_new_cancel_success_message(order_number),
+                parse_mode="Markdown"
             )
             
             order = db.get_order(order_id)
@@ -1226,12 +1243,14 @@ def register_order_handlers(bot: TeleBot, db: Storage, cfg: Config, content_cfg:
             else:
                 bot.send_message(
                     message.chat.id, 
-                    content_cfg.order.admin.new.user_not_found.message
+                    content_cfg.order.admin.new.user_not_found.message,
+                    parse_mode="Markdown"
                 )
         else:
             bot.send_message(
                 message.chat.id, 
-                content_cfg.get_order_admin_new_cancel_error_message(order_number)
+                content_cfg.get_order_admin_new_cancel_error_message(order_number),
+                parse_mode="Markdown"
             )
             
         admin_cancel_order_delete_session(call.from_user.id)

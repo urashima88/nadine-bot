@@ -206,7 +206,7 @@ def admin_main_menu_keyboard(content_cfg: ContentConfig):
         types.KeyboardButton(content_cfg.product.admin.create.message),
         types.KeyboardButton(content_cfg.order.admin.all.message),
         types.KeyboardButton(content_cfg.common.admin.user_data.all.message),
-        types.KeyboardButton(content_cfg.stats.admin.message),
+        types.KeyboardButton(content_cfg.statistics.admin.message),
         types.KeyboardButton(content_cfg.common.admin.personal_data.message),
         types.KeyboardButton(content_cfg.settings.admin.message)
     ]
@@ -331,16 +331,16 @@ def product_create_keyboard(content_cfg: ContentConfig, article_number: int):
 def product_create_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.product.admin.create.name.message, callback_data=f'add_name'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.description.message, callback_data=f'add_description'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.price.message, callback_data=f'add_price'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.materials.message, callback_data=f'add_materials'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.category.message, callback_data=f'add_category'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.production_time.message, callback_data=f'add_production_time'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.prod_limit.message, callback_data=f'add_prod_limit'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.images.add.message, callback_data=f'create_add_image'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.clear.message, callback_data=f'clear_product'),
-        types.InlineKeyboardButton(content_cfg.product.admin.create.complete.message, callback_data=f'complete_product')
+        types.InlineKeyboardButton(content_cfg.product.admin.create.name.message, callback_data='add_name'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.description.message, callback_data='add_description'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.price.message, callback_data='add_price'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.materials.message, callback_data='add_materials'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.category.message, callback_data='add_category'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.production_time.message, callback_data='add_production_time'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.prod_limit.message, callback_data='add_prod_limit'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.images.add.message, callback_data='create_add_image'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.clear.message, callback_data='clear_product'),
+        types.InlineKeyboardButton(content_cfg.product.admin.create.complete.message, callback_data='complete_product')
     ]
     markup.add(*buttons)
     return markup
@@ -348,13 +348,23 @@ def product_create_keyboard(content_cfg: ContentConfig):
 def product_choose_category_keyboard(content_cfg: ContentConfig):
     markup = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.bracelets.message, callback_data=f'create_choose_bracelets'),
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.earrings.message, callback_data=f'create_choose_earrings'),
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.necklaces.message, callback_data=f'create_choose_necklaces'),
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.brooches.message, callback_data=f'create_choose_brooches'),
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.pendants.message, callback_data=f'create_choose_pendants'),
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.chains.message, callback_data=f'create_choose_chains'),
-        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.rings.message, callback_data=f'create_choose_rings')
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.bracelets.message, callback_data='create_choose_bracelets'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.earrings.message, callback_data='create_choose_earrings'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.necklaces.message, callback_data='create_choose_necklaces'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.brooches.message, callback_data='create_choose_brooches'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.pendants.message, callback_data='create_choose_pendants'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.chains.message, callback_data='create_choose_chains'),
+        types.InlineKeyboardButton(content_cfg.catalog.menu.categories.rings.message, callback_data='create_choose_rings')
+    ]
+    markup.add(*buttons)
+    return markup
+
+def statistics_keyboard(content_cfg: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.statistics.admin.histogram.completed_orders.year.message, callback_data="plot_completed_orders_year"),
+        types.InlineKeyboardButton(content_cfg.statistics.admin.histogram.revenue.year.message, callback_data="plot_revenue_year"),
+        types.InlineKeyboardButton(content_cfg.statistics.admin.histogram.new_users.year.message, callback_data="plot_new_users_year")
     ]
     markup.add(*buttons)
     return markup
