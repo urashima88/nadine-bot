@@ -1,6 +1,7 @@
 from logging import Logger
 from datetime import datetime
 from io import BytesIO
+from typing import List
 
 from telebot import TeleBot, types
 import matplotlib
@@ -99,7 +100,7 @@ def register_statistics_handlers(bot: TeleBot, db: Storage, cfg: Config, content
         counts = [item['orders_count'] for item in data]
         
         fig, ax = plt.subplots(figsize=(10, 6))
-        bars = ax.bar(content_cfg.common.months, counts, color='skyblue', edgecolor='navy', linewidth=1.2)
+        bars = ax.bar(get_month_short_names(), counts, color='skyblue', edgecolor='navy', linewidth=1.2)
 
         ax.set_title(content_cfg.get_statistics_admin_histogram_completed_orders_year_header_text(year), fontsize=16, pad=20)
         ax.set_xlabel(content_cfg.statistics.admin.histogram.month.text, fontsize=12)
@@ -138,7 +139,7 @@ def register_statistics_handlers(bot: TeleBot, db: Storage, cfg: Config, content
         revenues = [item['total_revenue'] for item in data]
         
         fig, ax = plt.subplots(figsize=(10, 6))
-        bars = ax.bar(content_cfg.common.months, revenues, color='lightgreen', edgecolor='darkgreen', linewidth=1.2)
+        bars = ax.bar(get_month_short_names(), revenues, color='lightgreen', edgecolor='darkgreen', linewidth=1.2)
         
         ax.set_title(content_cfg.get_statistics_admin_histogram_revenue_year_header_text(year), fontsize=16, pad=20)
         ax.set_xlabel(content_cfg.statistics.admin.histogram.month.text, fontsize=12)
@@ -177,7 +178,7 @@ def register_statistics_handlers(bot: TeleBot, db: Storage, cfg: Config, content
         counts = [item['new_users_count'] for item in data]
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        bars = ax.bar(content_cfg.common.months, counts, color='lightsalmon', edgecolor='darkred', linewidth=1.2)
+        bars = ax.bar(get_month_short_names(), counts, color='lightsalmon', edgecolor='darkred', linewidth=1.2)
 
         ax.set_title(content_cfg.get_statistics_admin_histogram_new_users_year_header_text(year), fontsize=16, pad=20)
         ax.set_xlabel(content_cfg.statistics.admin.histogram.month.text, fontsize=12)
@@ -198,3 +199,9 @@ def register_statistics_handlers(bot: TeleBot, db: Storage, cfg: Config, content
         plt.close(fig)
 
         bot.send_photo(call.message.chat.id, buf)
+        
+    def get_month_short_names() -> List[str]:
+        month_short_names = []
+        for ru_month in content_cfg.common.eng2ru_month_map.values():
+            month_short_names.append(ru_month[:3])
+        return month_short_names

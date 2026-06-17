@@ -24,6 +24,8 @@ class Config:
     use_file_handler: bool
     logs_dir: str
     
+    content_config_path: str
+    
 def load_config() -> Config:
     load_dotenv()
     
@@ -42,6 +44,7 @@ def load_config() -> Config:
         use_stream_handler = bool(int(os.getenv("USE_STREAM_HANDLER", 1))),
         use_file_handler = bool(int(os.getenv("USE_FILE_HANDLER", 1))),
         logs_dir = os.getenv("LOGS_DIR", "logs"),
+        content_config_path = os.getenv("CONTENT_CONFIG_PATH", "configs/content_config.json")
     )
     
     return cfg

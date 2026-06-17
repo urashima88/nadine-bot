@@ -368,3 +368,11 @@ def statistics_keyboard(content_cfg: ContentConfig):
     ]
     markup.add(*buttons)
     return markup
+
+def settings_admin_keyboard(content_cfg: ContentConfig):
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    buttons = [
+        types.InlineKeyboardButton(content_cfg.settings.admin.content.config.message, callback_data="change_content_config")
+    ]
+    markup.add(*buttons)
+    return markup
