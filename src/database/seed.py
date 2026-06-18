@@ -4,7 +4,7 @@ import json
 from decimal import Decimal
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from logging import Logger
 
 import psycopg2
@@ -114,22 +114,24 @@ class SeedManager:
         with self.conn.cursor() as cur:
             for u in data:
                 cur.execute("""
-                    INSERT INTO users (tg_user_id, tg_username, tg_full_name, full_name, phone, is_admin)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO users (tg_user_id, tg_username, tg_full_name, full_name, phone, is_admin, timezone)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (tg_user_id) DO UPDATE SET
                         tg_username = EXCLUDED.tg_username,
                         tg_full_name = EXCLUDED.tg_full_name,
                         full_name = EXCLUDED.full_name,
                         phone = EXCLUDED.phone,
-                        is_admin = EXCLUDED.is_admin
+                        is_admin = EXCLUDED.is_admin,
+                        timezone = EXCLUDED.timezone
                 """, (
                     u['tg_user_id'], u.get('tg_username'), u.get('tg_full_name'),
-                    u.get('full_name'), u.get('phone'), u.get('is_admin', False)
+                    u.get('full_name'), u.get('phone'), u.get('is_admin', False),
+                    u.get('timezone', '')
                 ))
             self.conn.commit()
         return self._fetch_id_map('users', 'tg_user_id')
 
-    def seed_delivery_points(self, filename: str, users: Dict[int, str]) -> Dict[str, str]:
+    def seed_delivery_points(self, filename: str, users: Dict[int, str]) -> Dict[str, Tuple[str]]:
         data = self._load_json(filename)
         if not data:
             return {}
@@ -142,10 +144,10 @@ class SeedManager:
             values.append((user_id, item['company'], item['address']))
         self._execute_values('delivery_points', ['user_id', 'company', 'address'], values)
         with self.conn.cursor() as cur:
-            cur.execute("SELECT id, user_id, company, address FROM delivery_points")
+            cur.execute("SELECT user_id, company, address FROM delivery_points")
             mapping = {}
             for row in cur.fetchall():
-                mapping[(row[1], row[2], row[3])] = row[0]  # (user_id, company, address) -> id
+                mapping[row[0]] = (row[2], row[3]) # user_id: (company, address)
         self.logger.info(f"Loaded {len(values)} delivery points.")
         return mapping
 
@@ -168,22 +170,6 @@ class SeedManager:
                              values, conflict_target='user_id, product_id')
         self.logger.info(f"Loaded {len(values)} cart items.")
 
-    def seed_order_attempts(self, filename: str, users: Dict[int, str]):
-        data = self._load_json(filename)
-        if not data:
-            return
-        with self.conn.cursor() as cur:
-            for item in data:
-                user_id = users.get(item['tg_user_id'])
-                if not user_id:
-                    self.logger.warning(f"Unknown user {item['tg_user_id']}")
-                    continue
-                attempted_at = datetime.now() - timedelta(hours=item.get('hours_ago', 0))
-                cur.execute("INSERT INTO order_attempts (user_id, attempted_at) VALUES (%s, %s)",
-                            (user_id, attempted_at))
-            self.conn.commit()
-        self.logger.info(f"Loaded {len(data)} order attempts.")
-
     def seed_orders_and_items(
         self, 
         filename: str, 
@@ -200,20 +186,32 @@ class SeedManager:
                 if not user_id:
                     self.logger.warning(f"Unknown user {order['tg_user_id']}")
                     continue
-                dp_key = (user_id, order['delivery_company'], order['delivery_address'])
-                dp_id = delivery_points.get(dp_key)
-                if not dp_id:
-                    self.logger.warning(f"Unknown delivery point {dp_key}")
-                    continue
+                
+                delivery_company, delivery_point_address = delivery_points.get(user_id)
 
                 created_at = datetime.now() - timedelta(days=order.get('created_at_days_ago', 0))
                 cur.execute("""
-                    INSERT INTO orders (user_id, delivery_point_id, order_price, delivery_price, status, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO orders (
+                        user_id, 
+                        order_price, 
+                        delivery_price, 
+                        status, 
+                        created_at, 
+                        delivery_company_snapshot, 
+                        delivery_point_address_snapshot,
+                        delivery_info
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
-                    user_id, dp_id, Decimal(str(order['order_price'])),
-                    Decimal(str(order['delivery_price'])), order['status'], created_at
+                    user_id, 
+                    Decimal(str(order['order_price'])),
+                    Decimal(str(order['delivery_price'])), 
+                    order['status'], 
+                    created_at,
+                    delivery_company,
+                    delivery_point_address,
+                    order.get('delivery_info', '')
                 ))
                 order_id = cur.fetchone()[0]
 
@@ -240,8 +238,7 @@ class SeedManager:
         users = self.seed_users('03_users.json')
         delivery_points = self.seed_delivery_points('04_delivery_points.json', users)
         self.seed_cart('05_cart.json', users, products)
-        self.seed_order_attempts('06_order_attempts.json', users)
-        self.seed_orders_and_items('07_orders.json', users, delivery_points, products)
+        self.seed_orders_and_items('06_orders.json', users, delivery_points, products)
 
         self.logger.info("All test data loaded successfully!")
 
